@@ -4,7 +4,18 @@ const User = require("../models/User");
 
 const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      companyName,
+      companyWebsite,
+      designation,
+      companyLocation,
+      companyBio,
+      industry,
+    } = req.body;
 
     const existingUser = await User.findOne({ email });
 
@@ -14,12 +25,25 @@ const signup = async (req, res) => {
       });
     }
 
+    if (role && !["student", "recruiter"].includes(role)) {
+      return res.status(400).json({
+        message: "Invalid role specified. Role must be 'student' or 'recruiter'",
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
+      role: role || "student",
+      companyName: companyName || "",
+      companyWebsite: companyWebsite || "",
+      designation: designation || "",
+      companyLocation: companyLocation || "",
+      companyBio: companyBio || "",
+      industry: industry || "",
     });
 
     res.status(201).json({
@@ -54,10 +78,11 @@ const login = async (req, res) => {
       });
     }
 
-    // Generate JWT
+    // Generate JWT with role
     const token = jwt.sign(
       {
         id: user._id,
+        role: user.role || "student",
       },
       process.env.JWT_SECRET,
       {
@@ -72,6 +97,7 @@ const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role || "student",
       },
     });
   } catch (error) {
@@ -91,13 +117,23 @@ const updateProfile = async (req, res) => {
       });
     }
 
+    // Student fields
     user.college = req.body.college ?? user.college;
     user.degree = req.body.degree ?? user.degree;
     user.branch = req.body.branch ?? user.branch;
     user.year = req.body.year ?? user.year;
     user.skills = req.body.skills ?? user.skills;
+    user.concepts = req.body.concepts ?? user.concepts;
     user.goal = req.body.goal ?? user.goal;
     user.bio = req.body.bio ?? user.bio;
+
+    // Recruiter fields
+    user.companyName = req.body.companyName ?? user.companyName;
+    user.companyWebsite = req.body.companyWebsite ?? user.companyWebsite;
+    user.designation = req.body.designation ?? user.designation;
+    user.companyLocation = req.body.companyLocation ?? user.companyLocation;
+    user.companyBio = req.body.companyBio ?? user.companyBio;
+    user.industry = req.body.industry ?? user.industry;
 
     await user.save();
 
