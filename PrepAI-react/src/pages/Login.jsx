@@ -6,21 +6,20 @@ import api from "../services/api";
 function Login() {
   const navigate = useNavigate();
 
+  const [userRole, setUserRole] = useState("student");
   const [activeTab, setActiveTab] = useState("login");
 
   const [loginEmail, setLoginEmail] = useState("");
-
   const [loginPassword, setLoginPassword] = useState("");
 
   const [signupName, setSignupName] = useState("");
-
   const [signupEmail, setSignupEmail] = useState("");
-
   const [signupPassword, setSignupPassword] = useState("");
+  const [signupCompany, setSignupCompany] = useState("");
 
   async function createAccount() {
     if (!signupName || !signupEmail || !signupPassword) {
-      alert("Please fill all fields");
+      alert("Please fill all required fields");
       return;
     }
 
@@ -29,11 +28,17 @@ function Login() {
         name: signupName,
         email: signupEmail,
         password: signupPassword,
+        role: userRole,
+        companyName: userRole === "recruiter" ? signupCompany : "",
       });
 
-      alert("Account created successfully");
-
-      navigate("/profile-setup");
+      if (userRole === "recruiter") {
+        alert("Recruiter account created successfully! Please login.");
+        setActiveTab("login");
+      } else {
+        alert("Account created successfully");
+        navigate("/profile-setup");
+      }
     } catch (error) {
       alert(error.response?.data?.message || "Signup failed");
     }
@@ -49,7 +54,11 @@ function Login() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      navigate("/dashboard");
+      if (res.data.user?.role === "recruiter") {
+        navigate("/recruiter/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       alert(error.response?.data?.message || "Login failed");
     }
@@ -58,9 +67,35 @@ function Login() {
   return (
     <div className="login-page">
       <div className="container">
-        <h1>AI Student Career Mentor</h1>
+        {/* Role Switcher */}
+        <div className="role-selector">
+          <button
+            type="button"
+            className={`role-btn ${userRole === "student" ? "active" : ""}`}
+            onClick={() => setUserRole("student")}
+          >
+            🎓 Student
+          </button>
+          <button
+            type="button"
+            className={`role-btn ${userRole === "recruiter" ? "active" : ""}`}
+            onClick={() => setUserRole("recruiter")}
+          >
+            💼 Recruiter
+          </button>
+        </div>
 
-        <p className="subtitle">Your personalized path to a tech career.</p>
+        <h1>
+          {userRole === "recruiter"
+            ? "PrepAI Recruiter Portal"
+            : "AI Student Career Mentor"}
+        </h1>
+
+        <p className="subtitle">
+          {userRole === "recruiter"
+            ? "Post openings and match with top pre-vetted tech talent."
+            : "Your personalized path to a tech career."}
+        </p>
 
         <div className="tabs">
           <button
@@ -84,7 +119,11 @@ function Login() {
 
             <input
               type="email"
-              placeholder="student@university.edu.in"
+              placeholder={
+                userRole === "recruiter"
+                  ? "recruiter@company.com"
+                  : "student@university.edu.in"
+              }
               value={loginEmail}
               onChange={(e) => setLoginEmail(e.target.value)}
             />
@@ -99,7 +138,7 @@ function Login() {
             />
 
             <button className="primary-btn" onClick={loginUser}>
-              Login
+              {userRole === "recruiter" ? "Login to Recruiter Portal" : "Login"}
             </button>
           </div>
         )}
@@ -110,16 +149,34 @@ function Login() {
 
             <input
               type="text"
-              placeholder="Alex Student"
+              placeholder={
+                userRole === "recruiter" ? "Sarah Recruiter" : "Alex Student"
+              }
               value={signupName}
               onChange={(e) => setSignupName(e.target.value)}
             />
 
-            <label>Email</label>
+            {userRole === "recruiter" && (
+              <>
+                <label>Company Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Acme Corp"
+                  value={signupCompany}
+                  onChange={(e) => setSignupCompany(e.target.value)}
+                />
+              </>
+            )}
+
+            <label>Work / Personal Email</label>
 
             <input
               type="email"
-              placeholder="student@university.edu.in"
+              placeholder={
+                userRole === "recruiter"
+                  ? "recruiter@company.com"
+                  : "student@university.edu.in"
+              }
               value={signupEmail}
               onChange={(e) => setSignupEmail(e.target.value)}
             />
@@ -134,7 +191,9 @@ function Login() {
             />
 
             <button className="primary-btn" onClick={createAccount}>
-              Create Account
+              {userRole === "recruiter"
+                ? "Create Recruiter Account"
+                : "Create Account"}
             </button>
           </div>
         )}

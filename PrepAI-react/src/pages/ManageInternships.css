@@ -1,0 +1,247 @@
+.manage-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.manage-header-row h1 {
+  font-size: 28px;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.manage-header-row p {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.create-posting-btn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.create-posting-btn:hover {
+  opacity: 0.95;
+}
+
+.manage-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  gap: 16px;
+}
+
+.manage-toolbar input {
+  flex: 1;
+  max-width: 450px;
+  padding: 12px 18px;
+  border: 1px solid #d1d5db;
+  border-radius: 25px;
+  font-size: 14px;
+  outline: none;
+}
+
+.manage-toolbar input:focus {
+  border-color: #6366f1;
+}
+
+.postings-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.empty-postings-card {
+  background: white;
+  border-radius: 16px;
+  padding: 50px 30px;
+  text-align: center;
+  border: 2px dashed #e5e7eb;
+  max-width: 600px;
+  margin: 40px auto;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-postings-card h3 {
+  font-size: 20px;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.empty-postings-card p {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.postings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 22px;
+}
+
+.recruiter-posting-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eef2f6;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.recruiter-posting-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.card-top-row h3 {
+  font-size: 18px;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.company-sub {
+  font-size: 13px;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.status-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.status-pill.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-pill.closed {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.posting-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.meta-stipend {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.posting-description-snippet {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.skills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skill-chip {
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 14px;
+}
+
+.posting-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.match-candidates-btn {
+  flex: 1;
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.match-candidates-btn:hover {
+  background: #4f46e5;
+}
+
+.edit-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edit-btn:hover {
+  background: #e5e7eb;
+}
+
+.delete-btn {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background: #fee2e2;
+}
+
+@media (max-width: 768px) {
+  .manage-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+}
