@@ -9,6 +9,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const internshipRoutes = require("./routes/internshipRoutes");
 const aiInterviewRoutes = require("./routes/aiInterviewRoutes");
+const jobReadinessRoutes = require("./routes/jobReadinessRoutes");
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use("/api/internships", internshipRoutes);
 app.use("/api/learning", learningRoutes);
 app.use("/api/ai-interview", aiInterviewRoutes);
 app.use("/api/resume", resumeRoutes);
+app.use("/api/job-readiness", jobReadinessRoutes);
 
 app.get("/", (req, res) => {
   res.send("PrepAI Backend is Running 🚀");

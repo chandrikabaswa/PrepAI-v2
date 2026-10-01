@@ -24,7 +24,7 @@ function Login() {
     }
 
     try {
-      await api.post("/users/signup", {
+      const res = await api.post("/users/signup", {
         name: signupName,
         email: signupEmail,
         password: signupPassword,
@@ -32,13 +32,21 @@ function Login() {
         companyName: userRole === "recruiter" ? signupCompany : "",
       });
 
-      if (userRole === "recruiter") {
-        alert("Recruiter account created successfully! Please login.");
-        setActiveTab("login");
-      } else {
-        alert("Account created successfully");
-        navigate("/profile-setup");
-      }
+if (res.data.token) {
+  localStorage.setItem("token", res.data.token);
+}
+
+if (res.data.user) {
+  localStorage.setItem("user", JSON.stringify(res.data.user));
+}
+
+if (userRole === "recruiter") {
+  alert("Account created successfully! Please login.");
+  setActiveTab("login");
+} else {
+  alert("Account created successfully");
+  navigate("/profile-setup");
+}
     } catch (error) {
       alert(error.response?.data?.message || "Signup failed");
     }
