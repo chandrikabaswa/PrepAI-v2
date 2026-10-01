@@ -58,12 +58,27 @@ function App() {
 />
 
 <Route
+  path="/recruiter/post-internship"
+  element={<PostInternship />}
+/>
+
+<Route
+  path="/recruiter/edit-internship/:id"
+  element={<PostInternship />}
+/>
+
+<Route
   path="/recruiter/internships"
   element={<ManageInternships />}
 />
 
 <Route
   path="/recruiter/candidates"
+  element={<CandidateMatching />}
+/>
+
+<Route
+  path="/recruiter/candidates/:internshipId"
   element={<CandidateMatching />}
 />
       </Routes>
