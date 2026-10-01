@@ -187,13 +187,30 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   margin-top: auto;
   padding-top: 14px;
   border-top: 1px solid #f3f4f6;
 }
 
+.applicants-btn {
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  padding: 9px 13px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.applicants-btn:hover {
+  background: #0284c7;
+}
+
 .match-candidates-btn {
-  flex: 1;
   background: #6366f1;
   color: white;
   border: none;
@@ -203,6 +220,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 
 .match-candidates-btn:hover {

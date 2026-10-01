@@ -12,6 +12,7 @@ function Internships() {
   const [user, setUser] = useState({});
   const [recommendedInternships, setRecommendedInternships] = useState([]);
   const [allInternships, setAllInternships] = useState([]);
+  const [appliedInternships, setAppliedInternships] = useState({});
 
   const [activeTab, setActiveTab] = useState("recommended");
   const [search, setSearch] = useState("");
@@ -19,15 +20,26 @@ function Internships() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileRes, recommendedRes, allRes] = await Promise.all([
-          api.get("/users/profile"),
-          api.get("/internships/recommended"),
-          api.get("/internships"),
-        ]);
+        const [profileRes, recommendedRes, allRes, applicationsRes] =
+          await Promise.all([
+            api.get("/users/profile"),
+            api.get("/internships/recommended"),
+            api.get("/internships"),
+            api.get("/applications/student").catch(() => ({ data: [] })),
+          ]);
 
         setUser(profileRes.data);
         setRecommendedInternships(recommendedRes.data);
         setAllInternships(allRes.data);
+
+        const appliedMap = {};
+        (applicationsRes.data || []).forEach((app) => {
+          const intId = app.internship?._id || app.internship;
+          if (intId) {
+            appliedMap[intId] = app.status || "Applied";
+          }
+        });
+        setAppliedInternships(appliedMap);
       } catch (err) {
         console.error(err);
       }
@@ -35,6 +47,13 @@ function Internships() {
 
     fetchData();
   }, []);
+
+  const handleApplySuccess = (internshipId) => {
+    setAppliedInternships((prev) => ({
+      ...prev,
+      [internshipId]: "Applied",
+    }));
+  };
 
   const internships =
     activeTab === "recommended" ? recommendedInternships : allInternships;
@@ -99,7 +118,13 @@ function Internships() {
 
         <div className="intern-grid">
           {filteredInternships.map((internship) => (
-            <InternshipCard key={internship._id} internship={internship} />
+            <InternshipCard
+              key={internship._id}
+              internship={internship}
+              isApplied={Boolean(appliedInternships[internship._id])}
+              appliedStatus={appliedInternships[internship._id]}
+              onApplied={() => handleApplySuccess(internship._id)}
+            />
           ))}
         </div>
       </div>

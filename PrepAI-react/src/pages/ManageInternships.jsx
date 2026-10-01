@@ -148,6 +148,15 @@ export default function ManageInternships() {
 
                 <div className="posting-actions">
                   <button
+                    className="applicants-btn"
+                    onClick={() =>
+                      navigate(`/recruiter/internships/${item._id}/applicants`)
+                    }
+                  >
+                    👥 Applicants
+                  </button>
+
+                  <button
                     className="match-candidates-btn"
                     onClick={() => navigate(`/recruiter/candidates/${item._id}`)}
                   >
@@ -156,7 +165,9 @@ export default function ManageInternships() {
 
                   <button
                     className="edit-btn"
-                    onClick={() => navigate(`/recruiter/edit-internship/${item._id}`)}
+                    onClick={() =>
+                      navigate(`/recruiter/edit-internship/${item._id}`)
+                    }
                   >
                     ✏️ Edit
                   </button>

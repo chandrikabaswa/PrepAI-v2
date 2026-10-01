@@ -1,12 +1,55 @@
 const Internship = require("../models/Internship");
 const User = require("../models/User");
 
-// Get all internships
+// Helper to safely calculate skill match between user and internship skills
+const calculateSkillMatch = (userSkills = [], internshipSkills = []) => {
+  const userClean = (userSkills || []).map((s) => s.toLowerCase().trim());
+  const matchedSkills = (internshipSkills || []).filter((s) =>
+    userClean.includes(s.toLowerCase().trim())
+  );
+  const missingSkills = (internshipSkills || []).filter(
+    (s) => !userClean.includes(s.toLowerCase().trim())
+  );
+  const match =
+    internshipSkills && internshipSkills.length > 0
+      ? Math.round((matchedSkills.length / internshipSkills.length) * 100)
+      : 0;
+  return { match, matchedSkills, missingSkills };
+};
+
+// Get all internships (Active only, decorated with student match if authenticated)
 const getAllInternships = async (req, res) => {
   try {
-    const internships = await Internship.find();
+    const internships = await Internship.find({ status: { $ne: "Closed" } });
 
-    res.json(internships);
+    let userSkills = [];
+    if (req.user?.id) {
+      const user = await User.findById(req.user.id);
+      if (user && user.skills) {
+        userSkills = user.skills;
+      }
+    }
+
+    const results = internships.map((internship) => {
+      const { match, matchedSkills, missingSkills } = calculateSkillMatch(
+        userSkills,
+        internship.skills
+      );
+
+      const base =
+        typeof internship.toObject === "function"
+          ? internship.toObject()
+          : internship;
+
+      return {
+        ...base,
+        match,
+        matchedSkills,
+        missingSkills,
+      };
+    });
+
+    res.json(results);
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -14,7 +57,7 @@ const getAllInternships = async (req, res) => {
   }
 };
 
-// Get recommended internships
+// Get recommended internships (Active only, matching skills > 0)
 const getRecommendedInternships = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -25,29 +68,22 @@ const getRecommendedInternships = async (req, res) => {
       });
     }
 
-    const internships = await Internship.find();
+    const internships = await Internship.find({ status: { $ne: "Closed" } });
 
     const recommendations = internships
       .map((internship) => {
-        const userSkills = user.skills.map((skill) =>
-          skill.toLowerCase().trim()
+        const { match, matchedSkills, missingSkills } = calculateSkillMatch(
+          user.skills,
+          internship.skills
         );
 
-        const matchedSkills = internship.skills.filter((skill) =>
-          userSkills.includes(skill.toLowerCase().trim())
-        );
-
-        const missingSkills = internship.skills.filter(
-          (skill) =>
-            !userSkills.includes(skill.toLowerCase().trim())
-        );
-
-        const match = Math.round(
-          (matchedSkills.length / internship.skills.length) * 100
-        );
+        const base =
+          typeof internship.toObject === "function"
+            ? internship.toObject()
+            : internship;
 
         return {
-          ...internship.toObject(),
+          ...base,
           match,
           matchedSkills,
           missingSkills,

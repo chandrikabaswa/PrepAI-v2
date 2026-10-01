@@ -15,6 +15,7 @@ import RecruiterProfile from "./pages/RecruiterProfile";
 import PostInternship from "./pages/PostInternship";
 import ManageInternships from "./pages/ManageInternships";
 import CandidateMatching from "./pages/CandidateMatching";
+import RecruiterApplicants from "./pages/RecruiterApplicants";
 
 function App() {
   return (
@@ -43,44 +44,59 @@ function App() {
         <Route path="/resume-analyzer" element={<ResumeAnalyzer />} />
 
         <Route
-  path="/recruiter/dashboard"
-  element={<RecruiterDashboard />}
-/>
+          path="/recruiter/dashboard"
+          element={<RecruiterDashboard />}
+        />
 
-<Route
-  path="/recruiter/profile"
-  element={<RecruiterProfile />}
-/>
+        <Route
+          path="/recruiter/profile"
+          element={<RecruiterProfile />}
+        />
 
-<Route
-  path="/recruiter/internships/new"
-  element={<PostInternship />}
-/>
+        <Route
+          path="/recruiter/internships/new"
+          element={<PostInternship />}
+        />
 
-<Route
-  path="/recruiter/post-internship"
-  element={<PostInternship />}
-/>
+        <Route
+          path="/recruiter/post-internship"
+          element={<PostInternship />}
+        />
 
-<Route
-  path="/recruiter/edit-internship/:id"
-  element={<PostInternship />}
-/>
+        <Route
+          path="/recruiter/edit-internship/:id"
+          element={<PostInternship />}
+        />
 
-<Route
-  path="/recruiter/internships"
-  element={<ManageInternships />}
-/>
+        <Route
+          path="/recruiter/internships"
+          element={<ManageInternships />}
+        />
 
-<Route
-  path="/recruiter/candidates"
-  element={<CandidateMatching />}
-/>
+        <Route
+          path="/recruiter/candidates"
+          element={<CandidateMatching />}
+        />
 
-<Route
-  path="/recruiter/candidates/:internshipId"
-  element={<CandidateMatching />}
-/>
+        <Route
+          path="/recruiter/candidates/:internshipId"
+          element={<CandidateMatching />}
+        />
+
+        <Route
+          path="/recruiter/internships/:internshipId/applicants"
+          element={<RecruiterApplicants />}
+        />
+
+        <Route
+          path="/recruiter/applicants"
+          element={<RecruiterApplicants />}
+        />
+
+        <Route
+          path="/recruiter/applicants/:internshipId"
+          element={<RecruiterApplicants />}
+        />
       </Routes>
     </BrowserRouter>
   );
