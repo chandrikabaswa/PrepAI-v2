@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import "./MockInterviews.css";
 import api from "../services/api";
@@ -14,14 +14,15 @@ export function MockInterview() {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const [evaluating, setEvaluating] = useState(false);
   const [interviewStartTime, setInterviewStartTime] = useState(null);
   const user = JSON.parse(localStorage.getItem("user")) || {};
 
   const [fileName, setFileName] = useState("");
   const [resumeFile, setResumeFile] = useState(null);
-  const [role, setRole] = useState("");
-  const [description, setDescription] = useState("");
+  const [role, setRole] = useState(location.state?.role || "");
+  const [description, setDescription] = useState(location.state?.description || "");
 
   function handleFileChange(event) {
     const file = event.target.files[0];

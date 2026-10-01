@@ -25,11 +25,14 @@ function Login() {
     }
 
     try {
-      await api.post("/users/signup", {
+      const res = await api.post("/users/signup", {
         name: signupName,
         email: signupEmail,
         password: signupPassword,
       });
+
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
 
       alert("Account created successfully");
 
