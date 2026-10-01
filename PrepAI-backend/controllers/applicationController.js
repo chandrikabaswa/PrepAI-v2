@@ -173,9 +173,88 @@ const updateApplicationStatus = async (req, res) => {
   }
 };
 
+// POST /api/applications/:applicationId/contact (Recruiter only)
+const contactApplicant = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+
+    const application = await Application.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({
+        message: "Application not found",
+      });
+    }
+
+    // Verify recruiter owns the related internship
+    if (
+      !application.recruiter ||
+      application.recruiter.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        message:
+          "Forbidden: You do not own the internship for this application",
+      });
+    }
+
+    const student = await User.findById(application.student).select(
+      "-password"
+    );
+    if (!student) {
+      return res.status(404).json({
+        message: "Student candidate not found",
+      });
+    }
+
+    const internship = await Internship.findById(application.internship);
+
+    // Fetch full recruiter details for personalization
+    const recruiter = await User.findById(req.user.id).select("-password");
+    const recruiterName = recruiter?.name || req.user.name || "Hiring Team";
+    const companyName =
+      recruiter?.companyName || internship?.company || "PrepAI Partner";
+    const designationPart = recruiter?.designation
+      ? `${recruiter.designation}, `
+      : "";
+
+    const subject = `Regarding your application for ${
+      internship?.title || "Internship"
+    } at ${companyName}`;
+
+    const body = `Hi ${student.name},\n\nThank you for applying to the ${
+      internship?.title || "internship"
+    } position at ${companyName} via PrepAI. We have reviewed your profile and application, and would like to connect with you regarding the next steps in our hiring process.\n\nPlease let us know your availability for a brief conversation in the coming days.\n\nBest regards,\n${recruiterName}\n${designationPart}${companyName}`;
+
+    const mailtoUrl = `mailto:${student.email}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+
+    res.status(200).json({
+      message: "Applicant contact authorization verified",
+      contact: {
+        applicationId: application._id,
+        studentId: student._id,
+        studentName: student.name,
+        studentEmail: student.email,
+        internshipId: internship?._id,
+        internshipTitle: internship?.title,
+        company: companyName,
+        isApplicant: true,
+        subject,
+        body,
+        mailtoUrl,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   applyToInternship,
   getStudentApplications,
   getInternshipApplicants,
   updateApplicationStatus,
+  contactApplicant,
 };

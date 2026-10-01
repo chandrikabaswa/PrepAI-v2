@@ -13,6 +13,7 @@ const {
   updateInternship,
   deleteInternship,
   getCandidatesForInternship,
+  contactCandidate,
 } = require("../controllers/internshipController");
 
 // Student & shared routes (Preserved)
@@ -35,6 +36,13 @@ router.get(
   protect,
   authorizeRole("recruiter"),
   getCandidatesForInternship
+);
+
+router.post(
+  "/:internshipId/contact/:studentId",
+  protect,
+  authorizeRole("recruiter"),
+  contactCandidate
 );
 
 // Single internship routes

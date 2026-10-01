@@ -8,6 +8,7 @@ const {
   getStudentApplications,
   getInternshipApplicants,
   updateApplicationStatus,
+  contactApplicant,
 } = require("../controllers/applicationController");
 
 // Student application routes
@@ -27,6 +28,13 @@ router.put(
   protect,
   authorizeRole("recruiter"),
   updateApplicationStatus
+);
+
+router.post(
+  "/:applicationId/contact",
+  protect,
+  authorizeRole("recruiter"),
+  contactApplicant
 );
 
 module.exports = router;

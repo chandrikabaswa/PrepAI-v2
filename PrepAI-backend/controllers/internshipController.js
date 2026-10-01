@@ -1,5 +1,6 @@
 const Internship = require("../models/Internship");
 const User = require("../models/User");
+const Application = require("../models/Application");
 
 // Helper to safely calculate skill match between user and internship skills
 const calculateSkillMatch = (userSkills = [], internshipSkills = []) => {
@@ -351,6 +352,104 @@ const getCandidatesForInternship = async (req, res) => {
   }
 };
 
+// Recruiter contacts a candidate (must be matching candidate or applicant for this internship)
+const contactCandidate = async (req, res) => {
+  try {
+    const { internshipId, studentId } = req.params;
+
+    const internship = await Internship.findById(internshipId);
+    if (!internship) {
+      return res.status(404).json({
+        message: "Internship not found",
+      });
+    }
+
+    // Ownership check: must be postedBy this recruiter
+    if (!internship.postedBy || internship.postedBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        message:
+          "Forbidden: You are not authorized to contact candidates using an internship owned by another recruiter",
+      });
+    }
+
+    // Find student
+    const student = await User.findById(studentId).select("-password");
+    if (!student || student.role !== "student") {
+      return res.status(404).json({
+        message: "Student candidate not found",
+      });
+    }
+
+    // Check condition (a): Does student match skills for this internship?
+    const internshipSkills = (internship.skills || []).map((s) =>
+      s.toLowerCase().trim()
+    );
+    const studentSkills = (student.skills || []).map((s) =>
+      s.toLowerCase().trim()
+    );
+    const matchedSkills = (internship.skills || []).filter((skill) =>
+      studentSkills.includes(skill.toLowerCase().trim())
+    );
+    const hasMatchingSkills = matchedSkills.length > 0;
+
+    // Check condition (b): Does student have an application for this internship?
+    const application = await Application.findOne({
+      internship: internship._id,
+      student: student._id,
+    });
+    const hasApplied = Boolean(application);
+
+    if (!hasMatchingSkills && !hasApplied) {
+      return res.status(403).json({
+        message:
+          "Forbidden: Candidate is not eligible to be contacted for this internship. The student must either have applied to this internship or have matching skills.",
+      });
+    }
+
+    // Fetch full recruiter details for personalization
+    const recruiter = await User.findById(req.user.id).select("-password");
+    const recruiterName = recruiter?.name || req.user.name || "Hiring Team";
+    const companyName =
+      recruiter?.companyName || internship.company || "PrepAI Partner";
+    const designationPart = recruiter?.designation
+      ? `${recruiter.designation}, `
+      : "";
+
+    const isApplicant = hasApplied;
+    const subject = isApplicant
+      ? `Regarding your application for ${internship.title} at ${companyName}`
+      : `Opportunity: ${internship.title} at ${companyName}`;
+
+    const body = isApplicant
+      ? `Hi ${student.name},\n\nThank you for applying to the ${internship.title} position at ${companyName} via PrepAI. We have reviewed your profile and application, and would like to connect with you regarding the next steps in our hiring process.\n\nPlease let us know your availability for a brief conversation in the coming days.\n\nBest regards,\n${recruiterName}\n${designationPart}${companyName}`
+      : `Hi ${student.name},\n\nI came across your profile on PrepAI and was impressed by your skills and background. We currently have an opening for ${internship.title} at ${companyName} that aligns well with your experience.\n\nWe would love to discuss this opportunity with you. Please let us know if you would be interested in connecting for a brief introductory call.\n\nBest regards,\n${recruiterName}\n${designationPart}${companyName}`;
+
+    const mailtoUrl = `mailto:${student.email}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+
+    res.status(200).json({
+      message: "Candidate contact authorization verified",
+      contact: {
+        studentId: student._id,
+        studentName: student.name,
+        studentEmail: student.email,
+        internshipId: internship._id,
+        internshipTitle: internship.title,
+        company: companyName,
+        isApplicant,
+        subject,
+        body,
+        mailtoUrl,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllInternships,
   getRecommendedInternships,
@@ -360,4 +459,5 @@ module.exports = {
   updateInternship,
   deleteInternship,
   getCandidatesForInternship,
+  contactCandidate,
 };

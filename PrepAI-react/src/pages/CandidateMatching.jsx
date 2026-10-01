@@ -17,6 +17,30 @@ export default function CandidateMatching() {
   const [error, setError] = useState("");
   const [minMatch, setMinMatch] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [contactFeedback, setContactFeedback] = useState("");
+  const [contactingId, setContactingId] = useState(null);
+  const [recruiterProfile, setRecruiterProfile] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user")) || {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Fetch latest recruiter profile for personalized contact messages
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/users/profile");
+        if (res.data) {
+          setRecruiterProfile(res.data);
+        }
+      } catch (err) {
+        // Fallback to localStorage data
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // Load recruiter's postings for the dropdown selector
   useEffect(() => {
@@ -79,6 +103,48 @@ export default function CandidateMatching() {
     });
   }, [candidates, minMatch, searchQuery]);
 
+  const getCandidateMailtoUrl = (candidate) => {
+    const company =
+      recruiterProfile.companyName ||
+      internshipData?.company ||
+      "Our Team";
+    const recruiterName = recruiterProfile.name || "Hiring Team";
+    const designationPart = recruiterProfile.designation
+      ? `${recruiterProfile.designation}, `
+      : "";
+
+    const subject = `Opportunity: ${internshipData?.title || "Internship"} at ${company}`;
+    const body = `Hi ${candidate.name},\n\nI came across your profile on PrepAI and was impressed by your skills and background. We currently have an opening for ${internshipData?.title || "Internship"} at ${company} that aligns well with your experience.\n\nWe would love to discuss this opportunity with you. Please let us know if you would be interested in connecting for a brief introductory call.\n\nBest regards,\n${recruiterName}\n${designationPart}${company}`;
+
+    return `mailto:${candidate.email}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handleContactCandidate = async (e, candidate) => {
+    e.preventDefault();
+    if (!selectedJobId || !candidate.id) return;
+
+    setContactingId(candidate.id);
+    try {
+      const res = await api.post(
+        `/internships/${selectedJobId}/contact/${candidate.id}`
+      );
+      const { mailtoUrl } = res.data.contact;
+      setContactFeedback(`Opening email draft for ${candidate.name}...`);
+      window.location.href = mailtoUrl;
+      setTimeout(() => setContactFeedback(""), 4000);
+    } catch (err) {
+      console.error("Failed to contact candidate:", err);
+      alert(
+        err.response?.data?.message ||
+          "Failed to authorize contact with this candidate."
+      );
+    } finally {
+      setContactingId(null);
+    }
+  };
+
   return (
     <div className="layout">
       <RecruiterSidebar />
@@ -105,6 +171,12 @@ export default function CandidateMatching() {
             </div>
           )}
         </div>
+
+        {contactFeedback && (
+          <div className="contact-toast-notification">
+            ✉️ {contactFeedback}
+          </div>
+        )}
 
         {error && <div className="alert-banner error">{error}</div>}
 
@@ -265,10 +337,13 @@ export default function CandidateMatching() {
                   <span className="candidate-email">✉️ {candidate.email}</span>
 
                   <a
-                    href={`mailto:${candidate.email}?subject=Opportunity for ${internshipData?.title} at ${internshipData?.company}&body=Hi ${candidate.name},%0D%0A%0D%0AWe reviewed your profile on PrepAI and were impressed by your background. We would like to connect with you regarding our ${internshipData?.title} opening.`}
+                    href={getCandidateMailtoUrl(candidate)}
+                    onClick={(e) => handleContactCandidate(e, candidate)}
                     className="contact-btn"
                   >
-                    ✉️ Contact Candidate
+                    {contactingId === candidate.id
+                      ? "Connecting..."
+                      : "✉️ Contact Candidate"}
                   </a>
                 </div>
               </div>

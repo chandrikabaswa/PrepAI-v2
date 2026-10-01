@@ -20,6 +20,77 @@ export default function RecruiterApplicants() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [updatingId, setUpdatingId] = useState(null);
   const [notification, setNotification] = useState("");
+  const [contactingId, setContactingId] = useState(null);
+  const [recruiterProfile, setRecruiterProfile] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user")) || {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Fetch latest recruiter profile for personalized contact messages
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/users/profile");
+        if (res.data) {
+          setRecruiterProfile(res.data);
+        }
+      } catch (err) {
+        // Fallback to localStorage data
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const getApplicantMailtoUrl = (app) => {
+    const student = app.student || {};
+    const company =
+      recruiterProfile.companyName ||
+      internshipData?.company ||
+      "Our Team";
+    const recruiterName = recruiterProfile.name || "Hiring Team";
+    const designationPart = recruiterProfile.designation
+      ? `${recruiterProfile.designation}, `
+      : "";
+
+    const subject = `Regarding your application for ${
+      internshipData?.title || "Internship"
+    } at ${company}`;
+    const body = `Hi ${student.name || "Candidate"},\n\nThank you for applying to the ${
+      internshipData?.title || "internship"
+    } position at ${company} via PrepAI. We have reviewed your profile and application, and would like to connect with you regarding the next steps in our hiring process.\n\nPlease let us know your availability for a brief conversation in the coming days.\n\nBest regards,\n${recruiterName}\n${designationPart}${company}`;
+
+    return `mailto:${student.email}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handleContactApplicant = async (e, app) => {
+    e.preventDefault();
+    const student = app.student || {};
+    if (!student._id && !student.id) return;
+
+    setContactingId(app._id);
+    try {
+      const res = await api.post(`/applications/${app._id}/contact`);
+      const { mailtoUrl } = res.data.contact;
+      setNotification(
+        `Opening email draft for ${student.name || "candidate"}...`
+      );
+      window.location.href = mailtoUrl;
+      setTimeout(() => setNotification(""), 4000);
+    } catch (err) {
+      console.error("Failed to contact applicant:", err);
+      alert(
+        err.response?.data?.message ||
+          "Failed to authorize contact with this applicant."
+      );
+    } finally {
+      setContactingId(null);
+    }
+  };
 
   // Load recruiter's postings for the posting selector
   useEffect(() => {
@@ -279,13 +350,6 @@ export default function RecruiterApplicants() {
                   })
                 : "Recently";
 
-              const mailSubject = encodeURIComponent(
-                `PrepAI Application for ${internshipData?.title || "Internship"} at ${internshipData?.company || "Our Team"}`
-              );
-              const mailBody = encodeURIComponent(
-                `Hi ${student.name || "Candidate"},\n\nThank you for applying to the ${internshipData?.title || "internship"} role. We reviewed your profile on PrepAI and would like to connect.\n\nBest regards,\n${internshipData?.company || "Hiring Team"}`
-              );
-
               return (
                 <div key={app._id} className="applicant-card">
                   <div className="applicant-card-header">
@@ -381,10 +445,13 @@ export default function RecruiterApplicants() {
                     </div>
 
                     <a
-                      href={`mailto:${student.email}?subject=${mailSubject}&body=${mailBody}`}
+                      href={getApplicantMailtoUrl(app)}
+                      onClick={(e) => handleContactApplicant(e, app)}
                       className="contact-btn"
                     >
-                      ✉️ Contact Candidate
+                      {contactingId === app._id
+                        ? "Connecting..."
+                        : "✉️ Contact Candidate"}
                     </a>
                   </div>
                 </div>
