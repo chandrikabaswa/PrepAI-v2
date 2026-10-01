@@ -16,6 +16,8 @@ export default function Sidebar() {
 
         <li onClick={() => navigate("/internships")}>Internships</li>
 
+        <li onClick={() => navigate("/my-applications")}>My Applications</li>
+
         <li onClick={() => navigate("/mock-interview")}>Mock Interview</li>
 
         <li onClick={() => navigate("/profile")}>Profile</li>

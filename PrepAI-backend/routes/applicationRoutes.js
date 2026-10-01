@@ -6,6 +6,7 @@ const { protect, authorizeRole } = require("../middleware/authMiddleware");
 const {
   applyToInternship,
   getStudentApplications,
+  withdrawApplication,
   getInternshipApplicants,
   updateApplicationStatus,
   contactApplicant,
@@ -14,6 +15,7 @@ const {
 // Student application routes
 router.post("/:internshipId", protect, authorizeRole("student"), applyToInternship);
 router.get("/student", protect, authorizeRole("student"), getStudentApplications);
+router.delete("/:applicationId", protect, authorizeRole("student"), withdrawApplication);
 
 // Recruiter applicant management routes
 router.get(

@@ -33,6 +33,11 @@ function App() {
 
         <Route path="/internships" element={<Internships />} />
 
+        <Route
+          path="/my-applications"
+          element={<Internships defaultTab="applied" />}
+        />
+
         <Route path="/mock-interview" element={<MockInterviews />} />
 
         <Route path="/projects/:id" element={<ProjectDetails />} />

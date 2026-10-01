@@ -68,9 +68,43 @@ const getStudentApplications = async (req, res) => {
   try {
     const applications = await Application.find({ student: req.user.id })
       .populate("internship")
+      .populate("recruiter", "name email companyName designation")
       .sort({ createdAt: -1 });
 
     res.status(200).json(applications);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+// DELETE /api/applications/:applicationId (Student only)
+const withdrawApplication = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+
+    const application = await Application.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({
+        message: "Application not found",
+      });
+    }
+
+    // Verify student owns this application
+    if (application.student.toString() !== req.user.id) {
+      return res.status(403).json({
+        message:
+          "Forbidden: You are not authorized to withdraw this application",
+      });
+    }
+
+    await Application.findByIdAndDelete(applicationId);
+
+    res.status(200).json({
+      message: "Application withdrawn successfully",
+      applicationId,
+    });
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -254,6 +288,7 @@ const contactApplicant = async (req, res) => {
 module.exports = {
   applyToInternship,
   getStudentApplications,
+  withdrawApplication,
   getInternshipApplicants,
   updateApplicationStatus,
   contactApplicant,
