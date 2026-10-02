@@ -130,6 +130,23 @@ export default function ManageInternships() {
                   <span className="meta-stipend">💰 {item.stipend}</span>
                 </div>
 
+                <div className="posting-applicants-row">
+                  <div className="applicants-count-tag">
+                    👥 <strong>{item.applicantCount || 0}</strong>{" "}
+                    {item.applicantCount === 1 ? "Applicant" : "Applicants"}
+                  </div>
+                  {item.statusCounts && item.statusCounts.Shortlisted > 0 && (
+                    <span className="applicant-stat-chip shortlisted">
+                      🟢 {item.statusCounts.Shortlisted} Shortlisted
+                    </span>
+                  )}
+                  {item.statusCounts && item.statusCounts.Reviewing > 0 && (
+                    <span className="applicant-stat-chip reviewing">
+                      🟡 {item.statusCounts.Reviewing} In Review
+                    </span>
+                  )}
+                </div>
+
                 {item.description && (
                   <p className="posting-description-snippet">
                     {item.description.length > 130
@@ -153,7 +170,7 @@ export default function ManageInternships() {
                       navigate(`/recruiter/internships/${item._id}/applicants`)
                     }
                   >
-                    👥 Applicants
+                    👥 Applicants ({item.applicantCount || 0})
                   </button>
 
                   <button

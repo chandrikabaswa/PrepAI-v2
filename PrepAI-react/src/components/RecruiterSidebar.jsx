@@ -41,6 +41,18 @@ export default function RecruiterSidebar() {
         </li>
 
         <li
+          className={
+            isActive("/recruiter/applicants") ||
+            location.pathname.includes("/applicants")
+              ? "active"
+              : ""
+          }
+          onClick={() => navigate("/recruiter/applicants")}
+        >
+          👥 Applicants
+        </li>
+
+        <li
           className={isActive("/recruiter/post-internship") ? "active" : ""}
           onClick={() => navigate("/recruiter/post-internship")}
         >

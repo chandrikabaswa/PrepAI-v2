@@ -285,6 +285,118 @@ const contactApplicant = async (req, res) => {
   }
 };
 
+// GET /api/applications/recruiter/analytics (Recruiter only)
+const getRecruiterAnalytics = async (req, res) => {
+  try {
+    const recruiterId = req.user.id;
+
+    // 1. Find all internships owned by this recruiter
+    const internships = await Internship.find({ postedBy: recruiterId }).sort({
+      createdAt: -1,
+    });
+
+    const internshipIds = internships.map((i) => i._id);
+
+    // 2. Find all applications for these internships
+    const applications = await Application.find({
+      internship: { $in: internshipIds },
+    })
+      .populate("student", "name email college degree branch year skills")
+      .populate("internship", "title company location mode status stipend")
+      .sort({ createdAt: -1 });
+
+    // 3. Compute overall aggregate metrics
+    const totalPostings = internships.length;
+    const activePostings = internships.filter(
+      (i) => i.status !== "Closed"
+    ).length;
+    const closedPostings = internships.filter(
+      (i) => i.status === "Closed"
+    ).length;
+    const totalApplicants = applications.length;
+
+    const statusCounts = {
+      Applied: 0,
+      Reviewing: 0,
+      Shortlisted: 0,
+      Rejected: 0,
+    };
+
+    applications.forEach((app) => {
+      if (statusCounts[app.status] !== undefined) {
+        statusCounts[app.status] += 1;
+      }
+    });
+
+    // 4. Per-posting breakdown
+    const postingsBreakdown = internships.map((job) => {
+      const jobApps = applications.filter(
+        (a) =>
+          a.internship && a.internship._id.toString() === job._id.toString()
+      );
+
+      const jobStatusCounts = {
+        Applied: 0,
+        Reviewing: 0,
+        Shortlisted: 0,
+        Rejected: 0,
+      };
+
+      jobApps.forEach((a) => {
+        if (jobStatusCounts[a.status] !== undefined) {
+          jobStatusCounts[a.status] += 1;
+        }
+      });
+
+      return {
+        _id: job._id,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        mode: job.mode,
+        stipend: job.stipend,
+        duration: job.duration,
+        skills: job.skills,
+        status: job.status || "Active",
+        applicantCount: jobApps.length,
+        statusCounts: jobStatusCounts,
+        latestAppliedAt: jobApps.length > 0 ? jobApps[0].createdAt : null,
+      };
+    });
+
+    // 5. Recent applications list (top 10 most recent across all postings)
+    const recentApplications = applications.slice(0, 10).map((app) => ({
+      _id: app._id,
+      status: app.status,
+      createdAt: app.createdAt,
+      student: app.student,
+      internship: app.internship
+        ? {
+            _id: app.internship._id,
+            title: app.internship.title,
+            company: app.internship.company,
+          }
+        : null,
+    }));
+
+    res.status(200).json({
+      metrics: {
+        totalPostings,
+        activePostings,
+        closedPostings,
+        totalApplicants,
+        statusCounts,
+      },
+      postingsBreakdown,
+      recentApplications,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   applyToInternship,
   getStudentApplications,
@@ -292,4 +404,5 @@ module.exports = {
   getInternshipApplicants,
   updateApplicationStatus,
   contactApplicant,
+  getRecruiterAnalytics,
 };

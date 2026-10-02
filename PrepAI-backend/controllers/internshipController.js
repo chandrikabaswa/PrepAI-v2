@@ -172,14 +172,49 @@ const createInternship = async (req, res) => {
   }
 };
 
-// Get all internships posted by logged-in recruiter
+// Get all internships posted by logged-in recruiter (enriched with applicant counts)
 const getRecruiterInternships = async (req, res) => {
   try {
     const internships = await Internship.find({ postedBy: req.user.id }).sort({
       createdAt: -1,
     });
 
-    res.status(200).json(internships);
+    const internshipIds = internships.map((i) => i._id);
+    const applications = await Application.find({
+      internship: { $in: internshipIds },
+    });
+
+    const countsMap = {};
+    const statusMap = {};
+    applications.forEach((app) => {
+      const key = app.internship.toString();
+      countsMap[key] = (countsMap[key] || 0) + 1;
+      if (!statusMap[key]) {
+        statusMap[key] = {
+          Applied: 0,
+          Reviewing: 0,
+          Shortlisted: 0,
+          Rejected: 0,
+        };
+      }
+      if (statusMap[key][app.status] !== undefined) {
+        statusMap[key][app.status] += 1;
+      }
+    });
+
+    const enriched = internships.map((job) => {
+      const obj = job.toObject();
+      obj.applicantCount = countsMap[job._id.toString()] || 0;
+      obj.statusCounts = statusMap[job._id.toString()] || {
+        Applied: 0,
+        Reviewing: 0,
+        Shortlisted: 0,
+        Rejected: 0,
+      };
+      return obj;
+    });
+
+    res.status(200).json(enriched);
   } catch (error) {
     res.status(500).json({
       message: error.message,

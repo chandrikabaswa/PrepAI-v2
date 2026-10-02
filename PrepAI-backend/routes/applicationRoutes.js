@@ -10,7 +10,16 @@ const {
   getInternshipApplicants,
   updateApplicationStatus,
   contactApplicant,
+  getRecruiterAnalytics,
 } = require("../controllers/applicationController");
+
+// Recruiter analytics route
+router.get(
+  "/recruiter/analytics",
+  protect,
+  authorizeRole("recruiter"),
+  getRecruiterAnalytics
+);
 
 // Student application routes
 router.post("/:internshipId", protect, authorizeRole("student"), applyToInternship);
