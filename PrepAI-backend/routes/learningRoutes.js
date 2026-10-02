@@ -7,7 +7,9 @@ const protect = require("../middleware/authMiddleware");
 const {
   getRecommendedLearning,
   getAILearningRecommendations,
+  exploreLearningTopic,
 } = require("../controllers/learningController");
+
 router.get(
   "/recommended",
   protect,
@@ -20,4 +22,16 @@ router.get(
   getAILearningRecommendations
 );
 
-module.exports = router;
+router.post(
+  "/explore",
+  protect,
+  exploreLearningTopic
+);
+
+router.get(
+  "/explore",
+  protect,
+  exploreLearningTopic
+);
+
+module.exports = router;

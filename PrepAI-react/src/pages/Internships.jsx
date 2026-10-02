@@ -81,16 +81,16 @@ function Internships() {
           <p>Discover internships matched to your skills.</p>
         </div>
 
-        <div className="tabs">
+        <div className="internship-tabs tabs">
           <button
-            className={activeTab === "recommended" ? "active" : ""}
+            className={`internship-tab ${activeTab === "recommended" ? "active" : ""}`}
             onClick={() => setActiveTab("recommended")}
           >
             Recommended
           </button>
 
           <button
-            className={activeTab === "all" ? "active" : ""}
+            className={`internship-tab ${activeTab === "all" ? "active" : ""}`}
             onClick={() => setActiveTab("all")}
           >
             Explore All

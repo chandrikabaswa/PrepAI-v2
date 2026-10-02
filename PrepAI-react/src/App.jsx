@@ -1,9 +1,10 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Projects from "./pages/Projects";
 import Login from "./pages/Login";
 import ProfileSetup from "./pages/ProfileSetup";
 import Dashboard from "./pages/Dashboard";
 import ViewProfile from "./pages/ViewProfile";
+import Experience from "./pages/Experience";
 import Internships from "./pages/Internships";
 import MockInterviews from "./pages/MockInterviews";
 import ProjectDetails from "./pages/ProjectDetails";
@@ -22,6 +23,8 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
 
         <Route path="/profile" element={<ViewProfile />} />
+
+        <Route path="/experience" element={<Navigate to="/profile?tab=experience" replace />} />
 
         <Route path="/projects" element={<Projects />} />
 

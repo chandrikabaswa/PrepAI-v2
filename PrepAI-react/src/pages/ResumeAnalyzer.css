@@ -1709,3 +1709,46 @@
     gap: 14px;
   }
 }
+
+/* ========================================== */
+/* RESUME ANALYZER PAGE WIDTH FIX             */
+/* ========================================== */
+
+.layout {
+  width: 100%;
+  min-width: 0;
+}
+
+.layout > .main {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+.layout > .main > * {
+  max-width: none;
+  box-sizing: border-box;
+}
+
+/* Resume Analysis cards */
+.layout > .main .resume-card,
+.layout > .main .job-result-container,
+.layout > .main .section-card,
+.layout > .main .job-header-card {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+/* Mobile */
+@media (max-width: 650px) {
+  .layout > .main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

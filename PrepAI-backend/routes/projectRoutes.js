@@ -9,11 +9,14 @@ const {
   getAIRecommendedProjects,
   getProjectById,
   getAllProjects,
+  buildAIProjects,
 } = require("../controllers/projectController");
 
 router.get("/recommended", protect, getRecommendedProjects);
 
 router.get("/ai-recommended", protect, getAIRecommendedProjects);
+
+router.post("/ai-builder", protect, buildAIProjects);
 
 router.get("/:id", protect, getProjectById);
 

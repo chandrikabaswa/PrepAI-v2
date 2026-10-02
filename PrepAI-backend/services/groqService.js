@@ -1,4 +1,5 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 const Groq = require("groq-sdk");
 
@@ -523,6 +524,331 @@ Expected JSON schema:
   return response.choices[0].message.content;
 }
 
+async function extractSkillsFromResume(resumeText) {
+  const prompt = `You are a resume skill extraction system.
+
+Extract only skills explicitly supported by the resume.
+
+Return ONLY valid JSON.
+Do not use markdown.
+Do not use code fences.
+Do not include explanations.
+
+Required format:
+
+{
+  "skills": ["skill1", "skill2", "skill3"]
+}
+
+Include relevant:
+- programming languages
+- frameworks
+- libraries
+- databases
+- developer tools
+- cloud/platform technologies
+- technical concepts
+- relevant professional tools
+
+Do not invent skills.
+Do not infer unsupported skills.
+
+Resume Text:
+${resumeText || "No resume text provided."}`;
+
+  const response = await groq.chat.completions.create({
+    model: "openai/gpt-oss-20b",
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.2,
+    max_completion_tokens: 4000,
+  });
+
+  console.log(
+    "RAW SKILL AI RESPONSE:",
+    response.choices[0].message.content
+  );
+
+  const result = response.choices[0].message.content;
+
+  let cleaned = (result || "")
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+
+  if (start === -1 || end === -1) {
+    throw new Error("AI did not return valid JSON.");
+  }
+
+  cleaned = cleaned.substring(start, end + 1);
+
+  const parsed = JSON.parse(cleaned);
+
+  if (!parsed.skills || !Array.isArray(parsed.skills)) {
+    throw new Error("AI returned an invalid skills format.");
+  }
+
+  const seen = new Set();
+  const cleanSkills = [];
+  for (const s of parsed.skills) {
+    const trimmed = (typeof s === "string" ? s : String(s)).trim();
+    if (!trimmed) continue;
+    const lower = trimmed.toLowerCase();
+    if (!seen.has(lower)) {
+      seen.add(lower);
+      cleanSkills.push(trimmed);
+    }
+  }
+
+  return cleanSkills;
+}
+
+async function generateCustomProjectIdeas({ technologies = [], difficulty = "Intermediate", domain = "" }) {
+  const techList = technologies.filter(Boolean).join(", ");
+  const domainText =
+    domain && domain !== "Any"
+      ? `Target Domain / Industry: ${domain}`
+      : "Domain: General Real-World Industry Application";
+
+  const prompt = `
+You are a senior principal engineer, open-source contributor, and technical hiring mentor.
+
+A student wants to build software projects using specific technologies, difficulty, and optional domain.
+Generate exactly 4 realistic, portfolio-worthy, production-grade project ideas tailored to their inputs.
+
+Target Parameters:
+- Technologies to use: ${techList || "Modern Web / Software Development Stack"}
+- Target Difficulty Level: ${difficulty || "Intermediate"}
+- ${domainText}
+
+CRITICAL REQUIREMENTS:
+1. The 4 projects MUST strictly center around and meaningfully use the student's selected technologies (${techList}).
+2. The projects MUST strictly match the selected difficulty level (${difficulty}).
+3. If a specific domain (${domain && domain !== "Any" ? domain : "General"}) is provided, all 4 project ideas MUST directly address realistic operational, clinical, enterprise, or consumer problems within that domain.
+4. Generate realistic, impressive, portfolio-worthy projects that students can showcase to technical recruiters and discuss in system design interviews.
+5. STRICTLY AVOID generic tutorial-style projects such as:
+   - Todo App
+   - Calculator
+   - Basic Portfolio
+   - Simple Weather App
+   - Basic Blog
+   - Simple CRUD application
+   unless the user explicitly asked for basic beginner exercises. Focus on practical real-world problems with business/user value.
+6. Provide a concise, clear problem statement and actionable core features for each project.
+7. Generate EXACTLY 4 projects.
+8. Return ONLY valid JSON with no markdown formatting, no code fences, no backticks.
+
+Expected JSON array schema:
+[
+  {
+    "title": "Project Title",
+    "description": "2-3 sentence overview explaining what the platform does, its value proposition, and how it utilizes the tech stack.",
+    "difficulty": "${difficulty || "Intermediate"}",
+    "technologies": ["Tech1", "Tech2", "Tech3"],
+    "problemStatement": "Clear description of the real-world operational or business challenge this project addresses.",
+    "keyFeatures": [
+      "Key technical feature 1",
+      "Key technical feature 2",
+      "Key technical feature 3",
+      "Key technical feature 4"
+    ],
+    "whyRecommended": "Why this project is high-value for a student's portfolio and demonstrates mastery of the target stack."
+  }
+]
+`;
+
+  const response = await groq.chat.completions.create({
+    model: "openai/gpt-oss-20b",
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+    max_completion_tokens: 5000,
+  });
+
+  const raw = response.choices[0].message.content;
+  let cleaned = (raw || "")
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  const start = cleaned.indexOf("[");
+  const end = cleaned.lastIndexOf("]");
+
+  if (start === -1 || end === -1) {
+    throw new Error("AI did not return a valid JSON array.");
+  }
+
+  cleaned = cleaned.substring(start, end + 1);
+  const parsed = JSON.parse(cleaned);
+
+  if (!Array.isArray(parsed)) {
+    throw new Error("Expected an array of projects from AI.");
+  }
+
+  // Ensure each project has required schema fields
+  return parsed.slice(0, 4).map((p) => ({
+    title: p.title || "Custom Project Idea",
+    description: p.description || "",
+    difficulty: p.difficulty || difficulty || "Intermediate",
+    technologies:
+      Array.isArray(p.technologies) && p.technologies.length > 0
+        ? p.technologies
+        : technologies,
+    problemStatement: p.problemStatement || p.description || "",
+    keyFeatures: Array.isArray(p.keyFeatures) ? p.keyFeatures : [],
+    whyRecommended: p.whyRecommended || "",
+  }));
+}
+
+async function generateTopicRoadmap(topic) {
+  const prompt = `
+You are a senior technical educator and software curriculum architect.
+
+A student wants to learn the topic/technology/skill: "${topic}".
+
+Generate a structured, professional, and actionable learning roadmap and study guide.
+
+Return ONLY valid JSON (no markdown formatting, no code fences, no commentary).
+
+JSON structure:
+{
+  "title": "${topic}",
+  "description": "2-3 sentence overview explaining what this technology/skill is and what it is used for in software development.",
+  "whyLearn": "Explain why this skill is valuable in the industry, what career opportunities it unlocks, and how it is evaluated in technical interviews.",
+  "difficulty": "Beginner | Intermediate | Advanced",
+  "duration": "e.g. 2-3 Weeks",
+  "prerequisites": [
+    "Prerequisite 1",
+    "Prerequisite 2"
+  ],
+  "whatYouWillLearn": [
+    "Core concept or capability 1",
+    "Core concept or capability 2",
+    "Core concept or capability 3",
+    "Core concept or capability 4"
+  ],
+  "roadmap": [
+    {
+      "step": 1,
+      "phase": "Foundations",
+      "title": "Phase 1 title",
+      "description": "What to study and practice in this initial phase."
+    },
+    {
+      "step": 2,
+      "phase": "Core Architecture",
+      "title": "Phase 2 title",
+      "description": "Key techniques, patterns, and hands-on implementations."
+    },
+    {
+      "step": 3,
+      "phase": "Advanced Patterns",
+      "title": "Phase 3 title",
+      "description": "Performance, security, production considerations, and edge cases."
+    },
+    {
+      "step": 4,
+      "phase": "Production & Portfolio",
+      "title": "Phase 4 title",
+      "description": "Building full-scale projects, testing, and deployment."
+    }
+  ],
+  "keyConcepts": [
+    "Concept 1",
+    "Concept 2",
+    "Concept 3",
+    "Concept 4",
+    "Concept 5"
+  ],
+  "projects": [
+    {
+      "title": "Project Idea 1",
+      "description": "Practical portfolio project description demonstrating this skill."
+    },
+    {
+      "title": "Project Idea 2",
+      "description": "Advanced or full-stack project description integrating this skill."
+    }
+  ],
+  "resources": [
+    {
+      "name": "Official Documentation",
+      "url": "https://..."
+    },
+    {
+      "name": "Interactive / Recommended Guide",
+      "url": "https://..."
+    }
+  ]
+}
+`;
+
+  const response = await groq.chat.completions.create({
+    model: "openai/gpt-oss-20b",
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.4,
+    max_completion_tokens: 6000,
+  });
+
+  const content = response.choices[0]?.message?.content || "{}";
+  let cleaned = content
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+
+  if (start === -1 || end === -1) {
+    throw new Error("AI did not return valid JSON for topic roadmap.");
+  }
+
+  cleaned = cleaned.substring(start, end + 1);
+  const parsed = JSON.parse(cleaned);
+
+  return {
+    title: parsed.title || topic,
+    description: parsed.description || `Comprehensive guide to learning ${topic}.`,
+    whyLearn: parsed.whyLearn || `Mastering ${topic} expands your technical versatility and job readiness.`,
+    difficulty: parsed.difficulty || "Intermediate",
+    duration: parsed.duration || "2-3 Weeks",
+    prerequisites: Array.isArray(parsed.prerequisites) ? parsed.prerequisites : ["Basic Programming Foundations"],
+    whatYouWillLearn: Array.isArray(parsed.whatYouWillLearn) ? parsed.whatYouWillLearn : [
+      `Core fundamentals of ${topic}`,
+      `Practical implementations and design patterns`,
+      `Common interview questions and debugging strategies`
+    ],
+    roadmap: Array.isArray(parsed.roadmap) ? parsed.roadmap : [
+      { step: 1, phase: "Foundations", title: "Getting Started", description: `Understand core building blocks and set up development environment for ${topic}.` },
+      { step: 2, phase: "Core Skills", title: "Hands-on Development", description: `Build functional components and practice fundamental workflows with ${topic}.` },
+      { step: 3, phase: "Best Practices", title: "Architecture & Optimization", description: `Master design patterns, debugging, and production-ready conventions.` }
+    ],
+    keyConcepts: Array.isArray(parsed.keyConcepts) ? parsed.keyConcepts : [topic, "Best Practices", "Core API", "Architecture"],
+    projects: Array.isArray(parsed.projects) ? parsed.projects : [
+      { title: `${topic} Starter Project`, description: `Build a clean, documented application showcasing key capabilities of ${topic}.` }
+    ],
+    resources: Array.isArray(parsed.resources) && parsed.resources.length > 0 ? parsed.resources : [
+      { name: "Official Documentation", url: "https://developer.mozilla.org" }
+    ],
+  };
+}
+
 module.exports = {
   generateInterviewQuestions,
   evaluateInterviewAnswers,
@@ -530,5 +856,11 @@ module.exports = {
   generateLearningRecommendations,
   analyzeResume,
   analyzeResumeForJob,
+  extractSkillsFromResume,
+  generateCustomProjectIdeas,
+  generateTopicRoadmap,
 };
+
+
+
 

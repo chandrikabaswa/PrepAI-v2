@@ -1,86 +1,600 @@
-.layout {
-  display: flex;
-  min-height: 100vh;
-}
+/* ============================================================
+   Dashboard.css — PrepAI Career Dashboard
+   Scoped cleanly with db-* prefix to prevent any CSS leakage
+   ============================================================ */
 
-.main {
+.db-main {
   flex: 1;
-  padding: 40px 50px;
-
+  padding: 24px 36px 60px 36px;
+  background-color: #f8fafc;
   overflow-y: auto;
   height: 100vh;
+  box-sizing: border-box;
 }
 
-.welcome h1 {
-  font-size: 30px;
-  margin: 0;
-}
-
-.welcome p {
-  margin-top: 6px;
-  color: #6b7280;
-  margin-bottom: 32px;
-}
-
-.card {
-  background: white;
-  padding: 26px;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
-  transition: 0.2s;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.06);
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
-  margin-bottom: 28px;
-}
-
-.recommendations {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-.section-header {
+.db-content-wrap {
+  max-width: 1040px;
+  margin: 0 auto;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.section-header h3 {
+/* ──────────────────────────────────────────────
+   1. HERO SECTION
+   ────────────────────────────────────────────── */
+.db-hero {
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 60%, #7c3aed 100%);
+  border-radius: 18px;
+  padding: 28px 32px;
+  color: #ffffff;
+  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.28);
+  position: relative;
+  overflow: hidden;
+}
+
+.db-hero::after {
+  content: "";
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+}
+
+.db-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.db-hero-greeting {
+  font-size: 26px;
+  font-weight: 800;
   margin: 0;
-  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: #ffffff;
 }
 
-.section-header a {
-  font-size: 14px;
-  color: #6a5af9;
-  text-decoration: none;
-}
-
-.view-all {
-  text-decoration: none;
-  color: #6366f1;
+.db-hero-role {
+  display: inline-block;
+  width: fit-content;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 600;
-  font-size: 14px;
-  transition: 0.2s;
+  color: #ffffff;
+  letter-spacing: 0.02em;
 }
 
-.view-all:hover {
+.db-hero-quote {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.db-quote-text {
+  font-size: 17px;
+  font-weight: 600;
+  color: #fef08a;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* ──────────────────────────────────────────────
+   COMMON SECTION LABELS
+   ────────────────────────────────────────────── */
+.db-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.db-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+/* ──────────────────────────────────────────────
+   2. CAREER SNAPSHOT (4 Compact Cards)
+   ────────────────────────────────────────────── */
+.db-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.db-snapshot-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.db-snapshot-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+.db-snapshot-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.db-snapshot-icon {
+  font-size: 22px;
+}
+
+.db-snapshot-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.db-snapshot-number {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.15;
+}
+
+.db-snapshot-number.status-success {
+  color: #16a34a;
+}
+
+.db-snapshot-number.status-muted {
+  color: #94a3b8;
+}
+
+.db-snapshot-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ──────────────────────────────────────────────
+   3. YOUR NEXT MOVE (Featured Action Card)
+   ────────────────────────────────────────────── */
+.db-next-move-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 22px 26px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.db-next-move-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+}
+
+.db-next-move-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.db-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tag-primary {
+  background: #eef2ff;
   color: #4f46e5;
 }
 
-.project-container {
+.tag-danger {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.tag-warning {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.tag-info {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+.tag-success {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.db-next-move-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.db-next-move-highlight {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4f46e5;
+  background: #f5f7ff;
+  padding: 4px 12px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.db-next-move-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.db-next-move-actions {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.db-primary-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+  color: #ffffff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.db-primary-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+  opacity: 0.96;
+}
+
+/* ──────────────────────────────────────────────
+   4. TWO-COLUMN BOTTOM SECTION
+   ────────────────────────────────────────────── */
+.db-two-col-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.db-col-block {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.db-col-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.db-col-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.db-view-all-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6366f1;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.db-view-all-link:hover {
+  color: #4f46e5;
+  text-decoration: underline;
+}
+
+.db-col-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.db-preview-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.db-preview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+}
+
+.db-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.db-preview-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.db-diff-chip {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4f46e5;
+  background: #eef2ff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.db-preview-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.db-preview-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.db-mini-chip {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.db-preview-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.db-card-btn {
+  background: none;
+  border: none;
+  color: #6366f1;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.db-card-btn:hover {
+  color: #4338ca;
+  text-decoration: underline;
+}
+
+.db-empty-box {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.db-inline-link {
+  font-weight: 600;
+  color: #6366f1;
+  text-decoration: none;
+}
+
+.db-inline-link:hover {
+  text-decoration: underline;
+}
+
+/* ──────────────────────────────────────────────
+   5. MOCK INTERVIEW WIDE FEATURE CARD
+   ────────────────────────────────────────────── */
+.db-mock-banner {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f7ff 100%);
+  border: 1.5px solid #e0e7ff;
+  border-radius: 16px;
+  padding: 22px 28px;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 20px;
-  margin-top: 16px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.db-mock-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(99, 102, 241, 0.1);
+}
+
+.db-mock-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.db-mock-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6366f1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.db-mock-icon {
+  font-size: 14px;
+}
+
+.db-mock-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.db-mock-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.db-mock-action {
+  flex-shrink: 0;
+}
+
+.db-mock-btn {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: #ffffff;
+  border: none;
+  padding: 11px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.db-mock-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35);
+  opacity: 0.96;
+}
+
+/* ──────────────────────────────────────────────
+   RESPONSIVE DESIGN
+   ────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .db-main {
+    padding: 20px 20px 48px 20px;
+  }
+
+  .db-snapshot-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .db-two-col-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .db-mock-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px 22px;
+  }
+
+  .db-mock-action {
+    width: 100%;
+  }
+
+  .db-mock-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .db-main {
+    padding: 16px 14px 40px 14px;
+  }
+
+  .db-hero {
+    padding: 22px 18px;
+    border-radius: 14px;
+  }
+
+  .db-hero-greeting {
+    font-size: 22px;
+  }
+
+  .db-quote-text {
+    font-size: 15px;
+  }
+
+  .db-snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .db-next-move-card {
+    padding: 18px 16px;
+  }
+
+  .db-primary-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

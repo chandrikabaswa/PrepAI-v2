@@ -1,7 +1,10 @@
 const Project = require("../models/Project");
 const User = require("../models/User");
 
-const { generateProjectRecommendations } = require("../services/groqService");
+const {
+  generateProjectRecommendations,
+  generateCustomProjectIdeas,
+} = require("../services/groqService");
 
 const getRecommendedProjects = async (req, res) => {
   try {
@@ -114,9 +117,35 @@ const getAllProjects = async (req, res) => {
   }
 };
 
+const buildAIProjects = async (req, res) => {
+  try {
+    const { technologies, difficulty, domain } = req.body;
+
+    if (!technologies || !Array.isArray(technologies) || technologies.length === 0) {
+      return res.status(400).json({
+        message: "Please provide at least one technology.",
+      });
+    }
+
+    const projects = await generateCustomProjectIdeas({
+      technologies,
+      difficulty: difficulty || "Intermediate",
+      domain: domain || "",
+    });
+
+    res.json(projects);
+  } catch (error) {
+    console.error("AI Project Builder Error:", error.response?.data || error);
+    res.status(500).json({
+      message: error.message || "Failed to generate AI project recommendations.",
+    });
+  }
+};
+
 module.exports = {
   getRecommendedProjects,
   getAIRecommendedProjects,
   getProjectById,
   getAllProjects,
+  buildAIProjects,
 };

@@ -1,0 +1,298 @@
+.experience-page-main {
+  flex: 1;
+  padding: 30px 40px;
+  background: #f7f7fb;
+  min-height: 100vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.experience-toast-banner {
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  animation: slideDown 0.3s ease-out;
+}
+
+.experience-toast-banner.success {
+  background: #def7ec;
+  color: #03543f;
+  border: 1px solid #bcf0da;
+}
+
+.experience-toast-banner.error {
+  background: #fde8e8;
+  color: #9b1c1c;
+  border: 1px solid #fbd5d5;
+}
+
+.experience-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.page-main-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.page-sub-desc {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.primary-add-btn {
+  padding: 10px 20px;
+  background: #6a5af9;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(106, 90, 249, 0.25);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.primary-add-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+/* Experience Cards Grid */
+.experience-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .experience-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.experience-card {
+  background: white;
+  border: 1px solid #eaebf2;
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s;
+}
+
+.experience-card:hover {
+  border-color: #cbd5e1;
+}
+
+.exp-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.exp-role-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.exp-role {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.exp-type-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.exp-type-badge.internship {
+  background: #ede9fe;
+  color: #6b21a8;
+}
+
+.exp-type-badge.full-time {
+  background: #def7ec;
+  color: #03543f;
+}
+
+.exp-type-badge.part-time {
+  background: #e1effe;
+  color: #1e429f;
+}
+
+.exp-type-badge.research {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.exp-type-badge.freelance,
+.exp-type-badge.volunteer,
+.exp-type-badge.other {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.exp-company {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.exp-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-icon {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.btn-icon:hover {
+  background: #f3f4f6;
+}
+
+.btn-icon.delete:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.exp-meta-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+
+.exp-section-block {
+  margin-top: 10px;
+}
+
+.block-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 3px;
+}
+
+.block-text {
+  margin: 0;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.45;
+}
+
+.exp-skills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.exp-skill-chip {
+  font-size: 11px;
+  font-weight: 600;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.exp-link-row {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.exp-evidence-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6a5af9;
+  text-decoration: none;
+}
+
+.exp-evidence-link:hover {
+  text-decoration: underline;
+}
+
+/* Empty State Box */
+.experience-empty-box {
+  background: white;
+  border-radius: 14px;
+  padding: 60px 40px;
+  text-align: center;
+  border: 1px dashed #d1d5db;
+  max-width: 500px;
+  margin: 40px auto;
+}
+
+.empty-icon-large {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.experience-empty-box h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #111827;
+}
+
+.experience-empty-box p {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Modal Experience Specifics */
+.modal-experience {
+  width: 580px;
+}
+
+.checkbox-field-row {
+  margin-top: 8px;
+  margin-bottom: 6px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input {
+  cursor: pointer;
+}

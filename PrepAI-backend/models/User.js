@@ -57,6 +57,164 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    projects: [
+      {
+        title: {
+          type: String,
+          default: "",
+        },
+        description: {
+          type: String,
+          default: "",
+        },
+        techStack: {
+          type: [String],
+          default: [],
+        },
+        githubUrl: {
+          type: String,
+          default: "",
+        },
+        liveUrl: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
+
+    experience: [
+      {
+        type: {
+          type: String,
+          default: "Internship",
+        },
+        company: {
+          type: String,
+          default: "",
+        },
+        role: {
+          type: String,
+          default: "",
+        },
+        location: {
+          type: String,
+          default: "",
+        },
+        startDate: {
+          type: String,
+          default: "",
+        },
+        endDate: {
+          type: String,
+          default: "",
+        },
+        currentlyWorking: {
+          type: Boolean,
+          default: false,
+        },
+        description: {
+          type: String,
+          default: "",
+        },
+        achievements: {
+          type: String,
+          default: "",
+        },
+        skills: {
+          type: [String],
+          default: [],
+        },
+        link: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
+
+    codingProfiles: {
+      github: {
+        type: String,
+        default: "",
+      },
+      leetcode: {
+        type: String,
+        default: "",
+      },
+      hackerrank: {
+        type: String,
+        default: "",
+      },
+      linkedin: {
+        type: String,
+        default: "",
+      },
+    },
+
+    achievements: [
+      {
+        title: {
+          type: String,
+          default: "",
+        },
+        description: {
+          type: String,
+          default: "",
+        },
+        date: {
+          type: String,
+          default: "",
+        },
+        link: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
+
+    certifications: [
+      {
+        name: {
+          type: String,
+          default: "",
+        },
+        organization: {
+          type: String,
+          default: "",
+        },
+        date: {
+          type: String,
+          default: "",
+        },
+        credentialUrl: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
+
+    recruiterVisibility: {
+      type: Boolean,
+      default: true,
+    },
+
+    resume: {
+      fileName: {
+        type: String,
+        default: "",
+      },
+      fileUrl: {
+        type: String,
+        default: "",
+      },
+      text: {
+        type: String,
+        default: "",
+      },
+      uploadedAt: {
+        type: Date,
+      },
+    },
   },
   {
     timestamps: true,

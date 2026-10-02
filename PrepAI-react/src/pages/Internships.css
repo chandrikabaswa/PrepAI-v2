@@ -87,6 +87,43 @@
   color: #6b7280;
 }
 
+/* Scoped Internship Tabs */
+.internship-tabs,
+.intern-main .tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.internship-tab,
+.internship-tabs button,
+.intern-main .tabs button {
+  border: none;
+  padding: 11px 24px;
+  border-radius: 30px;
+  background: #e8ecff;
+  color: #6366f1;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.internship-tab:hover,
+.internship-tabs button:hover,
+.intern-main .tabs button:hover {
+  background: #dbe2ff;
+}
+
+.internship-tab.active,
+.internship-tabs button.active,
+.intern-main .tabs button.active {
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: white;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+}
+
 .intern-grid {
   display: grid;
   grid-template-columns:
