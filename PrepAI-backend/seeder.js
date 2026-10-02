@@ -17,9 +17,9 @@ mongoose
   .then(async () => {
     console.log("MongoDB Connected");
 
-    // Delete existing data
+    // Delete existing default data (preserves recruiter-created postings)
     await Project.deleteMany();
-    await Internship.deleteMany();
+    await Internship.deleteMany({ postedBy: null });
     await Learning.deleteMany();
 
     await Project.insertMany(projects);
