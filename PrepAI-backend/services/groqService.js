@@ -7,49 +7,82 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-async function generateInterviewQuestions(role, description, resumeText) {
+async function generateInterviewQuestions(
+  role,
+  description,
+  resumeText,
+  difficulty = "medium",
+  questionType = "general"
+) {
+  const normDifficulty = (difficulty || "medium").toLowerCase();
+  const normType = (questionType || "general").toLowerCase();
+
+  let difficultyInstruction = "";
+  if (normDifficulty === "easy") {
+    difficultyInstruction =
+      "Generate fundamental, straightforward interview questions covering core concepts suitable for basic preparation.";
+  } else if (normDifficulty === "hard") {
+    difficultyInstruction =
+      "Generate advanced, deeper, scenario-based, and challenging technical interview questions testing complex architectural decisions, edge cases, and in-depth problem-solving.";
+  } else {
+    // medium default
+    difficultyInstruction =
+      "Generate practical, moderate-depth interview questions involving real-world application, trade-offs, and problem-solving.";
+  }
+
+  let typeInstruction = "";
+  if (normType === "resume") {
+    typeInstruction = `
+- PRIMARY SOURCE: Candidate's Actual Resume.
+- Base questions strictly on the projects, skills, technologies, and achievements actually present in the resume.
+- Do NOT invent, assume, or hallucinate projects, technologies, or experience that are not present in the resume.
+- Focus directly on what the candidate has built and used.`;
+  } else if (normType === "jobdescription") {
+    typeInstruction = `
+- PRIMARY SOURCE: Job Description & Role Requirements.
+- Base questions strictly on the skills, technologies, responsibilities, and requirements mentioned in the Job Description.
+- Focus on assessing the candidate's qualification for the specific responsibilities outlined in the job description.`;
+  } else {
+    typeInstruction = `
+- PRIMARY SOURCE: General Role Competencies.
+- Generate questions generally relevant to the target role (${role}).
+- Focus on foundational to practical industry concepts expected for this job title.
+- Do not require resume or job description as the primary source.`;
+  }
+
   const prompt = `
-You are a senior software engineer conducting an interview.
+You are a senior technical interviewer and hiring manager conducting an interview for the role of ${role}.
 
-Generate exactly 5 interview questions.
-
-Candidate Resume:
-${resumeText || "Resume not provided."}
-
-Target Role:
+TARGET ROLE:
 ${role}
 
-Job Description:
-${description}
+SELECTED DIFFICULTY LEVEL:
+${normDifficulty.toUpperCase()}
+Rule: ${difficultyInstruction}
 
-Instructions:
+SELECTED QUESTION TYPE:
+${normType.toUpperCase()}
+Rule: ${typeInstruction}
 
-1. Read the resume carefully.
-2. Ask questions based on:
-   - Resume projects
-   - Skills mentioned
-   - Technologies used
-   - Job description
-3. Mix Easy, Medium and Hard questions.
-4. If the resume contains projects, ask about those projects.
-5. If the resume is empty, generate questions only from the job description.
+CANDIDATE RESUME:
+${resumeText || "No resume provided."}
 
-Return ONLY valid JSON.
+JOB DESCRIPTION:
+${description || "No job description provided."}
 
-Example:
+INSTRUCTIONS:
+1. Generate exactly 5 interview questions.
+2. Strictly enforce the selected difficulty level (${normDifficulty}): ${difficultyInstruction}
+3. Strictly enforce the selected question type (${normType}):
+   ${typeInstruction}
+4. If Question Type is "resume", do NOT invent projects or skills not present in the resume.
+5. Return ONLY a valid JSON array of 5 objects with no extra commentary or markdown formatting outside of JSON.
 
+Format:
 [
   {
-    "question": "Explain your Ecommerce project.",
-    "difficulty": "Easy"
-  },
-  {
-    "question": "How does React Virtual DOM work?",
-    "difficulty": "Medium"
-  },
-  {
-    "question": "Explain JWT Authentication in your project.",
-    "difficulty": "Hard"
+    "question": "Question text here",
+    "difficulty": "${normDifficulty.charAt(0).toUpperCase() + normDifficulty.slice(1)}"
   }
 ]
 `;
@@ -62,7 +95,7 @@ Example:
         content: prompt,
       },
     ],
-    temperature: 0.7,
+    temperature: 0.6,
   });
 
   return response.choices[0].message.content;

@@ -321,7 +321,7 @@ function Internships({ defaultTab = "recommended" }) {
           </button>
 
           <button
-            className={activeTab === "applied" ? "active" : ""}
+            className={`internship-tab ${activeTab === "applied" ? "active" : ""}`}
             onClick={() => handleTabChange("applied")}
           >
             My Applications ({myApplications.length})

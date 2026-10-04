@@ -6,24 +6,56 @@ const { extractResumeText } = require("../services/resumeParser");
 
 const generateInterview = async (req, res) => {
   try {
-    const { role, description } = req.body;
+    const {
+      role,
+      description = "",
+      difficulty = "medium",
+      questionType = "general",
+    } = req.body;
 
-    if (!role || !description) {
+    if (!role || !role.trim()) {
       return res.status(400).json({
-        message: "Role and Job Description are required.",
+        message: "Target Job Role is required.",
       });
     }
 
-    const resumeText = (await extractResumeText(req.file)).substring(0, 6000);
+    const normQuestionType = (questionType || "general").trim().toLowerCase();
+    const normDifficulty = (difficulty || "medium").trim();
+
+    let resumeText = "";
+    if (req.file) {
+      resumeText = (await extractResumeText(req.file)).substring(0, 6000);
+    } else if (req.body.resumeText) {
+      resumeText = req.body.resumeText.substring(0, 6000);
+    }
+
+    // Validation based on question type
+    if (normQuestionType === "resume" && !resumeText.trim()) {
+      return res.status(400).json({
+        message: "Please upload your resume for a Resume-Based interview.",
+      });
+    }
+
+    if (
+      normQuestionType === "jobdescription" &&
+      (!description || !description.trim())
+    ) {
+      return res.status(400).json({
+        message:
+          "Please provide a Job Description for a Job-Description-Based interview.",
+      });
+    }
 
     let result = await generateInterviewQuestions(
-      role,
-      description,
+      role.trim(),
+      description ? description.trim() : "",
       resumeText,
+      normDifficulty,
+      normQuestionType
     );
 
     result = result
-      .replace(/```json/g, "")
+      .replace(/```json/gi, "")
       .replace(/```/g, "")
       .trim();
 
@@ -31,7 +63,7 @@ const generateInterview = async (req, res) => {
     const end = result.lastIndexOf("]");
 
     if (start === -1 || end === -1) {
-      throw new Error("Gemini did not return a valid JSON array.");
+      throw new Error("AI did not return a valid JSON array.");
     }
 
     result = result.substring(start, end + 1);
@@ -40,9 +72,9 @@ const generateInterview = async (req, res) => {
 
     res.status(200).json(questions);
   } catch (error) {
-    console.error(error.response?.data || error);
+    console.error("Interview Generation Error:", error.response?.data || error);
     res.status(500).json({
-      message: error.message,
+      message: error.message || "Failed to generate interview.",
     });
   }
 };
