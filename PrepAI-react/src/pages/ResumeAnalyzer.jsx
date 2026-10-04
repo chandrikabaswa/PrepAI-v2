@@ -594,6 +594,7 @@ function getProjectDetails(proj) {
   const skills = Array.isArray(proj.skills) ? proj.skills : [];
 
   // Tech stack: support proj.techStack or default to skills list
+  // eslint-disable-next-line no-useless-assignment
   let techStack = [];
   if (Array.isArray(proj.techStack) && proj.techStack.length > 0) {
     techStack = proj.techStack;

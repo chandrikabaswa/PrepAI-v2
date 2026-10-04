@@ -16,65 +16,72 @@ function Internships({ defaultTab = "recommended" }) {
   const [appliedInternships, setAppliedInternships] = useState({});
   const [myApplications, setMyApplications] = useState([]);
 
-  // Check URL query param or prop for default tab
-  const getInitialTab = () => {
-    const params = new URLSearchParams(location.search);
+  const getTabFromLocation = (searchValue, defaultTabValue) => {
+    const params = new URLSearchParams(searchValue);
     const tabParam = params.get("tab");
-    if (tabParam === "applied" || defaultTab === "applied") return "applied";
-    if (tabParam === "all" || defaultTab === "all") return "all";
+
+    if (tabParam === "applied" || defaultTabValue === "applied") return "applied";
+    if (tabParam === "all" || defaultTabValue === "all") return "all";
+    if (tabParam === "recommended") return "recommended";
     return "recommended";
   };
 
-  const [activeTab, setActiveTab] = useState(getInitialTab);
+  const activeTab = useMemo(
+    () => getTabFromLocation(location.search, defaultTab),
+    [defaultTab, location.search]
+  );
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [withdrawingId, setWithdrawingId] = useState(null);
   const [feedbackMessage, setFeedbackMessage] = useState(null);
 
-  useEffect(() => {
+  const handleTabChange = (tab) => {
     const params = new URLSearchParams(location.search);
-    const tabParam = params.get("tab");
-    if (tabParam === "applied" || defaultTab === "applied") {
-      setActiveTab("applied");
-    } else if (tabParam === "all") {
-      setActiveTab("all");
-    } else if (defaultTab && defaultTab !== "applied") {
-      setActiveTab(defaultTab);
-    }
-  }, [defaultTab, location.search]);
-
-  const loadData = async () => {
-    try {
-      const [profileRes, recommendedRes, allRes, applicationsRes] =
-        await Promise.all([
-          api.get("/users/profile"),
-          api.get("/internships/recommended"),
-          api.get("/internships"),
-          api.get("/applications/student").catch(() => ({ data: [] })),
-        ]);
-
-      setUser(profileRes.data || {});
-      setRecommendedInternships(recommendedRes.data || []);
-      setAllInternships(allRes.data || []);
-
-      const apps = applicationsRes.data || [];
-      setMyApplications(apps);
-
-      const appliedMap = {};
-      apps.forEach((app) => {
-        const intId = app.internship?._id || app.internship;
-        if (intId) {
-          appliedMap[intId] = app.status || "Applied";
-        }
-      });
-      setAppliedInternships(appliedMap);
-    } catch (err) {
-      console.error("Error loading internships data:", err);
-    }
+    params.set("tab", tab);
+    navigate({ pathname: location.pathname, search: `?${params.toString()}` });
   };
 
   useEffect(() => {
-    loadData();
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        const [profileRes, recommendedRes, allRes, applicationsRes] =
+          await Promise.all([
+            api.get("/users/profile"),
+            api.get("/internships/recommended"),
+            api.get("/internships"),
+            api.get("/applications/student").catch(() => ({ data: [] })),
+          ]);
+
+        if (!isMounted) return;
+
+        setUser(profileRes.data || {});
+        setRecommendedInternships(recommendedRes.data || []);
+        setAllInternships(allRes.data || []);
+
+        const apps = applicationsRes.data || [];
+        setMyApplications(apps);
+
+        const appliedMap = {};
+        apps.forEach((app) => {
+          const intId = app.internship?._id || app.internship;
+          if (intId) {
+            appliedMap[intId] = app.status || "Applied";
+          }
+        });
+        setAppliedInternships(appliedMap);
+      } catch (err) {
+        console.error("Error loading internships data:", err);
+      }
+    };
+
+    void fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleApplySuccess = async (internshipId) => {
@@ -301,21 +308,21 @@ function Internships({ defaultTab = "recommended" }) {
         <div className="internship-tabs tabs">
           <button
             className={`internship-tab ${activeTab === "recommended" ? "active" : ""}`}
-            onClick={() => setActiveTab("recommended")}
+            onClick={() => handleTabChange("recommended")}
           >
             Recommended ({recommendedInternships.length})
           </button>
 
           <button
             className={`internship-tab ${activeTab === "all" ? "active" : ""}`}
-            onClick={() => setActiveTab("all")}
+            onClick={() => handleTabChange("all")}
           >
             Explore All ({allInternships.length})
           </button>
 
           <button
             className={activeTab === "applied" ? "active" : ""}
-            onClick={() => setActiveTab("applied")}
+            onClick={() => handleTabChange("applied")}
           >
             My Applications ({myApplications.length})
           </button>
@@ -597,7 +604,7 @@ function Internships({ defaultTab = "recommended" }) {
                     </p>
                     <button
                       className="explore-btn"
-                      onClick={() => setActiveTab("recommended")}
+                      onClick={() => handleTabChange("recommended")}
                     >
                       Explore Recommended Opportunities →
                     </button>
