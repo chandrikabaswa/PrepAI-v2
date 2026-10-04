@@ -1,22 +1,24 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Projects from "./pages/Projects";
-import Login from "./pages/Login";
-import ProfileSetup from "./pages/ProfileSetup";
-import Dashboard from "./pages/Dashboard";
-import ViewProfile from "./pages/ViewProfile";
-import Experience from "./pages/Experience";
-import Internships from "./pages/Internships";
-import MockInterviews from "./pages/MockInterviews";
-import ProjectDetails from "./pages/ProjectDetails";
-import Learning from "./pages/Learning";
-import InterviewResult from "./pages/InterviewResult";
-import ResumeAnalyzer from "./pages/ResumeAnalyzer";
-import RecruiterDashboard from "./pages/RecruiterDashboard";
-import RecruiterProfile from "./pages/RecruiterProfile";
-import PostInternship from "./pages/PostInternship";
-import ManageInternships from "./pages/ManageInternships";
-import CandidateMatching from "./pages/CandidateMatching";
-import RecruiterApplicants from "./pages/RecruiterApplicants";
+import Login from "./pages/shared/Login";
+
+import Dashboard from "./pages/student/Dashboard";
+import Experience from "./pages/student/Experience";
+import Internships from "./pages/student/Internships";
+import InterviewResult from "./pages/student/InterviewResult";
+import Learning from "./pages/student/Learning";
+import MockInterviews from "./pages/student/MockInterviews";
+import ProfileSetup from "./pages/student/ProfileSetup";
+import ProjectDetails from "./pages/student/ProjectDetails";
+import Projects from "./pages/student/Projects";
+import ResumeAnalyzer from "./pages/student/ResumeAnalyzer";
+import ViewProfile from "./pages/student/ViewProfile";
+
+import CandidateMatching from "./pages/recruiter/CandidateMatching";
+import ManageInternships from "./pages/recruiter/ManageInternships";
+import PostInternship from "./pages/recruiter/PostInternship";
+import RecruiterApplicants from "./pages/recruiter/RecruiterApplicants";
+import RecruiterDashboard from "./pages/recruiter/RecruiterDashboard";
+import RecruiterProfile from "./pages/recruiter/RecruiterProfile";
 
 function App() {
   return (

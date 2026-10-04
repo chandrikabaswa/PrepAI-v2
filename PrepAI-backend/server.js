@@ -1,16 +1,16 @@
-const userRoutes = require("./routes/userRoutes");
-const projectRoutes = require("./routes/projectRoutes");
-const learningRoutes = require("./routes/learningRoutes");
-const resumeRoutes = require("./routes/resumeRoutes");
+const userRoutes = require("./routes/shared/userRoutes");
+const projectRoutes = require("./routes/student/projectRoutes");
+const learningRoutes = require("./routes/student/learningRoutes");
+const resumeRoutes = require("./routes/student/resumeRoutes");
 
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
-const internshipRoutes = require("./routes/internshipRoutes");
-const aiInterviewRoutes = require("./routes/aiInterviewRoutes");
-const jobReadinessRoutes = require("./routes/jobReadinessRoutes");
-const applicationRoutes = require("./routes/applicationRoutes");
+const internshipRoutes = require("./routes/shared/internshipRoutes");
+const aiInterviewRoutes = require("./routes/student/aiInterviewRoutes");
+const jobReadinessRoutes = require("./routes/student/jobReadinessRoutes");
+const applicationRoutes = require("./routes/shared/applicationRoutes");
 
 const path = require("path");
 
