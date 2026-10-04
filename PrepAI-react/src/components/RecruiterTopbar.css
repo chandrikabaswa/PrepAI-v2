@@ -1,0 +1,75 @@
+.recruiter-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding: 0 0 15px 0;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.recruiter-portal-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #bbf7d0;
+}
+
+.dot-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+.recruiter-profile-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.recruiter-profile-section:hover {
+  background: #f1f5f9;
+}
+
+.recruiter-profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.recruiter-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.recruiter-sub {
+  font-size: 12px;
+  color: #6366f1;
+  font-weight: 500;
+}
+
+.recruiter-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}

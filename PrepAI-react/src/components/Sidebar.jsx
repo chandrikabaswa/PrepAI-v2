@@ -56,20 +56,19 @@ export default function Sidebar() {
         </li>
 
         <li
+          className={isActive("/my-applications") ? "active" : ""}
+          onClick={() => navigate("/my-applications")}
+        >
+          My Applications
+        </li>
+
+        <li
           className={isActive("/mock-interview") ? "active" : ""}
           onClick={() => navigate("/mock-interview")}
         >
           Mock Interviews
         </li>
-
-        <li
-          className={isActive("/profile") ? "active" : ""}
-          onClick={() => navigate("/profile")}
-        >
-          Profile
-        </li>
       </ul>
-
       <div className="signout" onClick={handleSignOut} style={{ cursor: "pointer" }}>
         Sign Out
       </div>

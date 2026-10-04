@@ -25,7 +25,18 @@ function deduplicateSkills(skills) {
 
 const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      companyName,
+      companyWebsite,
+      designation,
+      companyLocation,
+      companyBio,
+      industry,
+    } = req.body;
 
     const existingUser = await User.findOne({ email });
 
@@ -35,12 +46,25 @@ const signup = async (req, res) => {
       });
     }
 
+    if (role && !["student", "recruiter"].includes(role)) {
+      return res.status(400).json({
+        message: "Invalid role specified. Role must be 'student' or 'recruiter'",
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
+      role: role || "student",
+      companyName: companyName || "",
+      companyWebsite: companyWebsite || "",
+      designation: designation || "",
+      companyLocation: companyLocation || "",
+      companyBio: companyBio || "",
+      industry: industry || "",
     });
 
     const token = jwt.sign(
@@ -91,10 +115,11 @@ const login = async (req, res) => {
       });
     }
 
-    // Generate JWT
+    // Generate JWT with role
     const token = jwt.sign(
       {
         id: user._id,
+        role: user.role || "student",
       },
       process.env.JWT_SECRET,
       {
@@ -109,6 +134,7 @@ const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role || "student",
       },
     });
   } catch (error) {
@@ -176,21 +202,43 @@ const updateProfile = async (req, res) => {
         message: "User not found",
       });
     }
+    // Handle name and basic student profile fields
+    if (req.body.name !== undefined) {
+      user.name = req.body.name.trim() || user.name;
+    }
 
-    if (req.body.name !== undefined) user.name = req.body.name.trim() || user.name;
-    if (req.body.college !== undefined) user.college = req.body.college;
-    if (req.body.degree !== undefined) user.degree = req.body.degree;
-    if (req.body.branch !== undefined) user.branch = req.body.branch;
-    if (req.body.year !== undefined) user.year = req.body.year;
-    if (req.body.goal !== undefined) user.goal = req.body.goal;
-    if (req.body.bio !== undefined) user.bio = req.body.bio;
+    if (req.body.college !== undefined) {
+      user.college = req.body.college;
+    }
 
-    // Handle skills (Array, JSON string, or comma-separated string)
+    if (req.body.degree !== undefined) {
+      user.degree = req.body.degree;
+    }
+
+    if (req.body.branch !== undefined) {
+      user.branch = req.body.branch;
+    }
+
+    if (req.body.year !== undefined) {
+      user.year = req.body.year;
+    }
+
+    if (req.body.goal !== undefined) {
+      user.goal = req.body.goal;
+    }
+
+    if (req.body.bio !== undefined) {
+      user.bio = req.body.bio;
+    }
+
+    // Handle skills
     if (req.body.skills !== undefined) {
       let parsedSkills = req.body.skills;
+
       if (typeof parsedSkills === "string") {
         try {
           const jsonParsed = JSON.parse(parsedSkills);
+
           if (Array.isArray(jsonParsed)) {
             parsedSkills = jsonParsed;
           } else {
@@ -206,6 +254,7 @@ const updateProfile = async (req, res) => {
             .filter(Boolean);
         }
       }
+
       if (Array.isArray(parsedSkills)) {
         user.skills = deduplicateSkills(parsedSkills);
       }
@@ -214,9 +263,11 @@ const updateProfile = async (req, res) => {
     // Handle concepts
     if (req.body.concepts !== undefined) {
       let parsedConcepts = req.body.concepts;
+
       if (typeof parsedConcepts === "string") {
         try {
           const jsonParsed = JSON.parse(parsedConcepts);
+
           if (Array.isArray(jsonParsed)) {
             parsedConcepts = jsonParsed;
           } else {
@@ -232,14 +283,16 @@ const updateProfile = async (req, res) => {
             .filter(Boolean);
         }
       }
+
       if (Array.isArray(parsedConcepts)) {
         user.concepts = deduplicateSkills(parsedConcepts);
       }
     }
 
-    // Handle codingProfiles (Object, JSON string, or individual body fields)
+    // Handle coding profiles
     if (req.body.codingProfiles !== undefined) {
       let parsedProfiles = req.body.codingProfiles;
+
       if (typeof parsedProfiles === "string") {
         try {
           parsedProfiles = JSON.parse(parsedProfiles);
@@ -247,20 +300,27 @@ const updateProfile = async (req, res) => {
           parsedProfiles = {};
         }
       }
-      if (typeof parsedProfiles === "object" && parsedProfiles !== null) {
+
+      if (
+        typeof parsedProfiles === "object" &&
+        parsedProfiles !== null
+      ) {
         user.codingProfiles = {
           github:
             typeof parsedProfiles.github === "string"
               ? parsedProfiles.github.trim()
               : user.codingProfiles?.github || "",
+
           leetcode:
             typeof parsedProfiles.leetcode === "string"
               ? parsedProfiles.leetcode.trim()
               : user.codingProfiles?.leetcode || "",
+
           hackerrank:
             typeof parsedProfiles.hackerrank === "string"
               ? parsedProfiles.hackerrank.trim()
               : user.codingProfiles?.hackerrank || "",
+
           linkedin:
             typeof parsedProfiles.linkedin === "string"
               ? parsedProfiles.linkedin.trim()
@@ -278,14 +338,17 @@ const updateProfile = async (req, res) => {
           typeof req.body.github === "string"
             ? req.body.github.trim()
             : user.codingProfiles?.github || "",
+
         leetcode:
           typeof req.body.leetcode === "string"
             ? req.body.leetcode.trim()
             : user.codingProfiles?.leetcode || "",
+
         hackerrank:
           typeof req.body.hackerrank === "string"
             ? req.body.hackerrank.trim()
             : user.codingProfiles?.hackerrank || "",
+
         linkedin:
           typeof req.body.linkedin === "string"
             ? req.body.linkedin.trim()
@@ -296,6 +359,7 @@ const updateProfile = async (req, res) => {
     // Handle projects
     if (req.body.projects !== undefined) {
       let parsedProjects = req.body.projects;
+
       if (typeof parsedProjects === "string") {
         try {
           parsedProjects = JSON.parse(parsedProjects);
@@ -303,9 +367,11 @@ const updateProfile = async (req, res) => {
           parsedProjects = [];
         }
       }
+
       if (Array.isArray(parsedProjects)) {
         user.projects = parsedProjects.map((p) => {
           let techStack = [];
+
           if (Array.isArray(p.techStack)) {
             techStack = deduplicateSkills(p.techStack);
           } else if (typeof p.techStack === "string") {
@@ -313,6 +379,7 @@ const updateProfile = async (req, res) => {
               p.techStack.split(",").map((s) => s.trim())
             );
           }
+
           return {
             title: p.title || "",
             description: p.description || "",
@@ -328,6 +395,7 @@ const updateProfile = async (req, res) => {
     // Handle experience
     if (req.body.experience !== undefined) {
       let parsedExp = req.body.experience;
+
       if (typeof parsedExp === "string") {
         try {
           parsedExp = JSON.parse(parsedExp);
@@ -335,9 +403,11 @@ const updateProfile = async (req, res) => {
           parsedExp = [];
         }
       }
+
       if (Array.isArray(parsedExp)) {
         user.experience = parsedExp.map((e) => {
           let skills = [];
+
           if (Array.isArray(e.skills)) {
             skills = deduplicateSkills(e.skills);
           } else if (typeof e.skills === "string") {
@@ -345,6 +415,7 @@ const updateProfile = async (req, res) => {
               e.skills.split(",").map((s) => s.trim())
             );
           }
+
           return {
             type: e.type || "Internship",
             company: e.company || "",
@@ -366,6 +437,7 @@ const updateProfile = async (req, res) => {
     // Handle achievements
     if (req.body.achievements !== undefined) {
       let parsedAchievements = req.body.achievements;
+
       if (typeof parsedAchievements === "string") {
         try {
           parsedAchievements = JSON.parse(parsedAchievements);
@@ -374,14 +446,26 @@ const updateProfile = async (req, res) => {
             .split(",")
             .map((s) => s.trim())
             .filter(Boolean)
-            .map((title) => ({ title, description: "", date: "", link: "" }));
+            .map((title) => ({
+              title,
+              description: "",
+              date: "",
+              link: "",
+            }));
         }
       }
+
       if (Array.isArray(parsedAchievements)) {
         user.achievements = parsedAchievements.map((a) => {
           if (typeof a === "string") {
-            return { title: a, description: "", date: "", link: "" };
+            return {
+              title: a,
+              description: "",
+              date: "",
+              link: "",
+            };
           }
+
           return {
             title: a.title || "",
             description: a.description || "",
@@ -396,6 +480,7 @@ const updateProfile = async (req, res) => {
     // Handle certifications
     if (req.body.certifications !== undefined) {
       let parsedCerts = req.body.certifications;
+
       if (typeof parsedCerts === "string") {
         try {
           parsedCerts = JSON.parse(parsedCerts);
@@ -404,14 +489,26 @@ const updateProfile = async (req, res) => {
             .split(",")
             .map((s) => s.trim())
             .filter(Boolean)
-            .map((name) => ({ name, organization: "", date: "", credentialUrl: "" }));
+            .map((name) => ({
+              name,
+              organization: "",
+              date: "",
+              credentialUrl: "",
+            }));
         }
       }
+
       if (Array.isArray(parsedCerts)) {
         user.certifications = parsedCerts.map((c) => {
           if (typeof c === "string") {
-            return { name: c, organization: "", date: "", credentialUrl: "" };
+            return {
+              name: c,
+              organization: "",
+              date: "",
+              credentialUrl: "",
+            };
           }
+
           return {
             name: c.name || "",
             organization: c.organization || "",
@@ -437,6 +534,7 @@ const updateProfile = async (req, res) => {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/msword",
       ];
+
       const isPdfOrDocx =
         allowedMimes.includes(req.file.mimetype) ||
         req.file.originalname.toLowerCase().endsWith(".pdf") ||
@@ -448,22 +546,30 @@ const updateProfile = async (req, res) => {
         });
       }
 
-      // Ensure uploads folder exists
       const uploadsDir = path.join(__dirname, "../uploads");
+
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
-      const safeFilename = `${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const safeFilename = `${Date.now()}-${req.file.originalname.replace(
+        /[^a-zA-Z0-9._-]/g,
+        "_"
+      )}`;
+
       const filePath = path.join(uploadsDir, safeFilename);
+
       fs.writeFileSync(filePath, req.file.buffer);
 
-      // Extract text from resume using existing parser
       let extractedText = "";
+
       try {
         extractedText = await extractResumeText(req.file);
       } catch (parserErr) {
-        console.warn("Resume text extraction warning:", parserErr.message);
+        console.warn(
+          "Resume text extraction warning:",
+          parserErr.message
+        );
       }
 
       user.resume = {
@@ -473,6 +579,33 @@ const updateProfile = async (req, res) => {
         uploadedAt: new Date(),
       };
     }
+
+    // Recruiter fields
+    user.companyName =
+      req.body.companyName ?? user.companyName;
+
+    user.companyWebsite =
+      req.body.companyWebsite ?? user.companyWebsite;
+
+    user.designation =
+      req.body.designation ?? user.designation;
+
+    user.companyLocation =
+      req.body.companyLocation ?? user.companyLocation;
+
+    user.companyBio =
+      req.body.companyBio ?? user.companyBio;
+
+    user.industry =
+      req.body.industry ?? user.industry;
+
+    // Recruiter fields
+    user.companyName = req.body.companyName ?? user.companyName;
+    user.companyWebsite = req.body.companyWebsite ?? user.companyWebsite;
+    user.designation = req.body.designation ?? user.designation;
+    user.companyLocation = req.body.companyLocation ?? user.companyLocation;
+    user.companyBio = req.body.companyBio ?? user.companyBio;
+    user.industry = req.body.industry ?? user.industry;
 
     await user.save();
 

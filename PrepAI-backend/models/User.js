@@ -18,6 +18,12 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
+    role: {
+      type: String,
+      enum: ["student", "recruiter"],
+      default: "student",
+    },
+
     college: {
       type: String,
       default: "",
@@ -214,6 +220,37 @@ const userSchema = new mongoose.Schema(
       uploadedAt: {
         type: Date,
       },
+    },
+
+    // Recruiter profile fields
+    companyName: {
+      type: String,
+      default: "",
+    },
+
+    companyWebsite: {
+      type: String,
+      default: "",
+    },
+
+    designation: {
+      type: String,
+      default: "",
+    },
+
+    companyLocation: {
+      type: String,
+      default: "",
+    },
+
+    companyBio: {
+      type: String,
+      default: "",
+    },
+
+    industry: {
+      type: String,
+      default: "",
     },
   },
   {

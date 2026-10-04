@@ -43,6 +43,23 @@ const internshipSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    postedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    description: {
+      type: String,
+      default: "",
+    },
+
+    status: {
+      type: String,
+      enum: ["Active", "Closed"],
+      default: "Active",
+    },
   },
   {
     timestamps: true,
