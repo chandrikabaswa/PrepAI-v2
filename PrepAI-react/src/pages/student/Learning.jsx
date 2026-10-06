@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
 
 import Sidebar from "../../components/student/Sidebar";
@@ -24,25 +25,35 @@ const POPULAR_TOPICS = [
 ];
 
 export default function Learning() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user")) || {};
+
+  const urlSearch = searchParams.get("search") || searchParams.get("topic") || "";
+  const urlFilter = searchParams.get("filter") || "";
+  const urlDifficulty = searchParams.get("difficulty") || "All";
+  const urlTab = searchParams.get("tab") || (urlSearch ? "explore" : "recommended");
+
+  const [activeTab, setActiveTab] = useState(urlTab);
 
   // Personalized Recommended Topics
   const [recommendedTopics, setRecommendedTopics] = useState([]);
   const [loadingRecommended, setLoadingRecommended] = useState(true);
   const [aiRoadmapLoading, setAiRoadmapLoading] = useState(false);
 
-  // Filter toolbar for recommended topics
-  const [filterQuery, setFilterQuery] = useState("");
-  const [difficultyFilter, setDifficultyFilter] = useState("All");
+  // Filter toolbar for recommended topics (independent from Explore searchTopic)
+  const [filterQuery, setFilterQuery] = useState(urlFilter);
+  const [difficultyFilter, setDifficultyFilter] = useState(urlDifficulty);
 
   // Explore Something New Search State
-  const [searchTopic, setSearchTopic] = useState("");
+  const [searchTopic, setSearchTopic] = useState(urlSearch);
   const [exploredTopic, setExploredTopic] = useState(null);
   const [exploreLoading, setExploreLoading] = useState(false);
   const [exploreError, setExploreError] = useState("");
 
   // Detail Modal State
   const [selectedTopic, setSelectedTopic] = useState(null);
+  const initialAutoExploreDone = useRef(false);
 
   // Load recommended learning from existing database backend
   useEffect(() => {
@@ -82,6 +93,7 @@ export default function Learning() {
     const query = (topicToSearch || searchTopic).trim();
     if (!query) return;
 
+    setActiveTab("explore");
     setExploreError("");
     setExploreLoading(true);
 
@@ -100,10 +112,32 @@ export default function Learning() {
     }
   };
 
+  // Sync state to URL search parameters so navigation Back/Forward retains tab & search state
+  useEffect(() => {
+    const params = { tab: activeTab };
+    if (activeTab === "explore" && searchTopic.trim()) {
+      params.search = searchTopic.trim();
+    }
+    if (activeTab === "recommended") {
+      if (filterQuery.trim()) params.filter = filterQuery.trim();
+      if (difficultyFilter && difficultyFilter !== "All") params.difficulty = difficultyFilter;
+    }
+    setSearchParams(params, { replace: true });
+  }, [activeTab, searchTopic, filterQuery, difficultyFilter, setSearchParams]);
+
+  // Restore explored topic on initial mount if search param exists
+  useEffect(() => {
+    if (urlSearch && !initialAutoExploreDone.current) {
+      initialAutoExploreDone.current = true;
+      handleExploreTopic(urlSearch);
+    }
+  }, [urlSearch]);
+
   const handleClearExplored = () => {
     setExploredTopic(null);
     setSearchTopic("");
     setExploreError("");
+    setSearchParams({ tab: "explore" }, { replace: true });
   };
 
   // Filtered recommended topics list
@@ -246,317 +280,378 @@ export default function Learning() {
             </button>
           </form>
 
-          {/* Quick Explore Topic Chips */}
-          <div className="popular-topics-row">
-            <span className="popular-label">Popular Topics:</span>
-            <div className="popular-chips">
-              {POPULAR_TOPICS.map((topic) => (
-                <button
-                  key={topic}
-                  type="button"
-                  className={`popular-chip ${
-                    searchTopic.toLowerCase() === topic.toLowerCase()
-                      ? "active"
-                      : ""
-                  }`}
-                  onClick={() => handleExploreTopic(topic)}
-                >
-                  {topic}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ========================================================
-            2. EXPLORE SOMETHING NEW (MAIN NEW FEATURE)
-        ======================================================== */}
-        {exploreLoading && (
-          <div className="explore-loading-card">
-            <div className="explore-loading-spinner" />
-            <div className="explore-loading-text">
-              <h3>Exploring "{searchTopic}"...</h3>
-              <p>
-                Checking our curriculum database and utilizing AI to generate a
-                step-by-step roadmap, prerequisites, project ideas, and
-                verified resources.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {exploreError && (
-          <div className="explore-error-card">
-            <span className="error-icon">⚠️</span>
-            <div className="error-content">
-              <strong>Exploration Error</strong>
-              <p>{exploreError}</p>
-            </div>
+          {/* Navigation Tabs Bar */}
+          <div className="learning-tabs-bar" style={{ display: "flex", gap: "12px", marginTop: "16px", borderTop: "1px solid #f1f5f9", paddingTop: "16px" }}>
             <button
               type="button"
-              className="retry-btn"
-              onClick={() => handleExploreTopic(searchTopic)}
+              className={`learning-tab-btn ${activeTab === "recommended" ? "active" : ""}`}
+              style={{
+                padding: "8px 18px",
+                borderRadius: "8px",
+                fontWeight: "700",
+                fontSize: "14px",
+                border: "none",
+                cursor: "pointer",
+                background: activeTab === "recommended" ? "#4f46e5" : "#f1f5f9",
+                color: activeTab === "recommended" ? "#ffffff" : "#64748b",
+              }}
+              onClick={() => {
+                setActiveTab("recommended");
+                setSearchParams({ tab: "recommended" }, { replace: true });
+              }}
             >
-              Retry
+              ✨ Recommended For You
+            </button>
+            <button
+              type="button"
+              className={`learning-tab-btn ${activeTab === "explore" ? "active" : ""}`}
+              style={{
+                padding: "8px 18px",
+                borderRadius: "8px",
+                fontWeight: "700",
+                fontSize: "14px",
+                border: "none",
+                cursor: "pointer",
+                background: activeTab === "explore" ? "#4f46e5" : "#f1f5f9",
+                color: activeTab === "explore" ? "#ffffff" : "#64748b",
+              }}
+              onClick={() => {
+                setActiveTab("explore");
+                const params = { tab: "explore" };
+                if (searchTopic.trim()) params.search = searchTopic.trim();
+                setSearchParams(params, { replace: true });
+              }}
+            >
+              🔍 Explore Skills & Technologies
             </button>
           </div>
-        )}
+        </div>
 
-        {exploredTopic && !exploreLoading && (
-          <div className="explore-result-container">
-            <div className="explore-result-header">
-              <div className="explore-result-title-group">
-                <span className="explore-section-badge">
-                  🎯 Explore Something New
-                </span>
-                <h2>{exploredTopic.title}</h2>
-              </div>
-
-              <div className="explore-header-actions">
-                <button
-                  type="button"
-                  className="clear-explored-btn"
-                  onClick={handleClearExplored}
-                >
-                  ✕ Clear Search
-                </button>
+        {/* ========================================================
+            2. EXPLORE SECTION (ACTIVE WHEN TAB === 'EXPLORE')
+        ======================================================== */}
+        {activeTab === "explore" && (
+          <div className="explore-tab-section">
+            {/* Quick Explore Topic Chips */}
+            <div className="popular-topics-row" style={{ marginBottom: "20px" }}>
+              <span className="popular-label">Popular Topics:</span>
+              <div className="popular-chips">
+                {POPULAR_TOPICS.map((topic) => (
+                  <button
+                    key={topic}
+                    type="button"
+                    className={`popular-chip ${
+                      searchTopic.toLowerCase() === topic.toLowerCase()
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() => handleExploreTopic(topic)}
+                  >
+                    {topic}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="explore-card">
-              <div className="explore-card-top">
-                <div className="explore-meta-badges">
-                  <span
-                    className={`diff-tag ${
-                      exploredTopic.difficulty?.toLowerCase() || "intermediate"
-                    }`}
-                  >
-                    {exploredTopic.difficulty || "Intermediate"}
-                  </span>
-                  <span className="duration-tag">
-                    ⏳ {exploredTopic.duration || "2-3 Weeks"}
-                  </span>
-                  <span
-                    className={`source-tag ${
-                      exploredTopic.source === "database" ? "db" : "ai"
-                    }`}
-                  >
-                    {exploredTopic.source === "database"
-                      ? "🗄️ Database Verified"
-                      : "✨ AI Curated Roadmap"}
-                  </span>
+            {exploreLoading && (
+              <div className="explore-loading-card">
+                <div className="explore-loading-spinner" />
+                <div className="explore-loading-text">
+                  <h3>Exploring "{searchTopic}"...</h3>
+                  <p>
+                    Checking our curriculum database and utilizing AI to generate a
+                    step-by-step roadmap, prerequisites, project ideas, and
+                    verified resources.
+                  </p>
                 </div>
               </div>
+            )}
 
-              <p className="explore-desc">{exploredTopic.description}</p>
-
-              {exploredTopic.whyLearn && (
-                <div className="why-learn-box">
-                  <strong>💡 Why learn this skill:</strong>
-                  <p>{exploredTopic.whyLearn}</p>
+            {exploreError && (
+              <div className="explore-error-card">
+                <span className="error-icon">⚠️</span>
+                <div className="error-content">
+                  <strong>Exploration Error</strong>
+                  <p>{exploreError}</p>
                 </div>
-              )}
-
-              {/* Prerequisites & Key Concepts Preview */}
-              <div className="explore-preview-grid">
-                {exploredTopic.prerequisites &&
-                  exploredTopic.prerequisites.length > 0 && (
-                    <div className="preview-col">
-                      <span className="preview-label">Prerequisites:</span>
-                      <div className="preview-chips">
-                        {exploredTopic.prerequisites.map((req, i) => (
-                          <span key={i} className="preview-chip req">
-                            {req}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                {exploredTopic.keyConcepts &&
-                  exploredTopic.keyConcepts.length > 0 && (
-                    <div className="preview-col">
-                      <span className="preview-label">Important Concepts:</span>
-                      <div className="preview-chips">
-                        {exploredTopic.keyConcepts.slice(0, 5).map((c, i) => (
-                          <span key={i} className="preview-chip concept">
-                            {c}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-              </div>
-
-              {/* Action Button */}
-              <div className="explore-card-footer">
                 <button
                   type="button"
-                  className="view-roadmap-main-btn"
-                  onClick={() => handleOpenDetails(exploredTopic)}
+                  className="retry-btn"
+                  onClick={() => handleExploreTopic(searchTopic)}
                 >
-                  📖 View Complete Learning Roadmap & Guide →
+                  Retry
                 </button>
               </div>
-            </div>
+            )}
+
+            {exploredTopic && !exploreLoading && (
+              <div className="explore-result-container">
+                <div className="explore-result-header">
+                  <div className="explore-result-title-group">
+                    <span className="explore-section-badge">
+                      🎯 Explore Something New
+                    </span>
+                    <h2>{exploredTopic.title}</h2>
+                  </div>
+
+                  <div className="explore-header-actions">
+                    <button
+                      type="button"
+                      className="clear-explored-btn"
+                      onClick={handleClearExplored}
+                    >
+                      ✕ Clear Search
+                    </button>
+                  </div>
+                </div>
+
+                <div className="explore-card">
+                  <div className="explore-card-top">
+                    <div className="explore-meta-badges">
+                      <span
+                        className={`diff-tag ${
+                          exploredTopic.difficulty?.toLowerCase() || "intermediate"
+                        }`}
+                      >
+                        {exploredTopic.difficulty || "Intermediate"}
+                      </span>
+                      <span className="duration-tag">
+                        ⏳ {exploredTopic.duration || "2-3 Weeks"}
+                      </span>
+                      <span
+                        className={`source-tag ${
+                          exploredTopic.source === "database" ? "db" : "ai"
+                        }`}
+                      >
+                        {exploredTopic.source === "database"
+                          ? "🗄️ Database Verified"
+                          : "✨ AI Curated Roadmap"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="explore-desc">{exploredTopic.description}</p>
+
+                  {exploredTopic.whyLearn && (
+                    <div className="why-learn-box">
+                      <strong>💡 Why learn this skill:</strong>
+                      <p>{exploredTopic.whyLearn}</p>
+                    </div>
+                  )}
+
+                  {/* Prerequisites & Key Concepts Preview */}
+                  <div className="explore-preview-grid">
+                    {exploredTopic.prerequisites &&
+                      exploredTopic.prerequisites.length > 0 && (
+                        <div className="preview-col">
+                          <span className="preview-label">Prerequisites:</span>
+                          <div className="preview-chips">
+                            {exploredTopic.prerequisites.map((req, i) => (
+                              <span key={i} className="preview-chip req">
+                                {req}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {exploredTopic.keyConcepts &&
+                      exploredTopic.keyConcepts.length > 0 && (
+                        <div className="preview-col">
+                          <span className="preview-label">Important Concepts:</span>
+                          <div className="preview-chips">
+                            {exploredTopic.keyConcepts.slice(0, 5).map((c, i) => (
+                              <span key={i} className="preview-chip concept">
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+
+                  {/* Action Button */}
+                  <div className="explore-card-footer">
+                    <button
+                      type="button"
+                      className="view-roadmap-main-btn"
+                      style={{ background: "#4f46e5", color: "#ffffff", width: "100%" }}
+                      onClick={() =>
+                        navigate(
+                          `/learning-guide?skill=${encodeURIComponent(exploredTopic.title)}`
+                        )
+                      }
+                    >
+                      View Learning Guide →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* ========================================================
-            3. RECOMMENDED FOR YOU (EXISTING LOGIC PRESERVED)
+            3. RECOMMENDED FOR YOU (ACTIVE WHEN TAB === 'RECOMMENDED')
         ======================================================== */}
-        <div className="recommended-section">
-          <div className="recommended-header">
-            <div>
-              <h2 className="recommended-title">Recommended For You</h2>
-              <p className="recommended-sub">
-                Personalized topics aligned with your career goal (
-                <strong>{user.goal || "Software Engineer"}</strong>) and skills.
-              </p>
+        {activeTab === "recommended" && (
+          <div className="recommended-section">
+            <div className="recommended-header">
+              <div>
+                <h2 className="recommended-title">Recommended For You</h2>
+                <p className="recommended-sub">
+                  Personalized topics aligned with your career goal (
+                  <strong>{user.goal || "Software Engineer"}</strong>) and skills.
+                </p>
+              </div>
+
+              <div className="recommended-top-actions">
+                <button
+                  type="button"
+                  className="ai-refresh-btn"
+                  onClick={handleGenerateAIRoadmap}
+                  disabled={aiRoadmapLoading}
+                >
+                  {aiRoadmapLoading ? "🤖 Generating..." : "✨ AI Custom Recommendations"}
+                </button>
+              </div>
             </div>
 
-            <div className="recommended-top-actions">
-              <button
-                type="button"
-                className="ai-refresh-btn"
-                onClick={handleGenerateAIRoadmap}
-                disabled={aiRoadmapLoading}
-              >
-                {aiRoadmapLoading ? "🤖 Generating..." : "✨ AI Custom Recommendations"}
-              </button>
-            </div>
-          </div>
+            {/* Filter Toolbar for Recommended Cards */}
+            <div className="learning-toolbar">
+              <div className="toolbar-search">
+                <span className="toolbar-icon">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Filter recommended topics..."
+                  value={filterQuery}
+                  onChange={(e) => setFilterQuery(e.target.value)}
+                />
+              </div>
 
-          {/* Filter Toolbar for Recommended Cards */}
-          <div className="learning-toolbar">
-            <div className="toolbar-search">
-              <span className="toolbar-icon">🔍</span>
-              <input
-                type="text"
-                placeholder="Filter recommended topics..."
-                value={filterQuery}
-                onChange={(e) => setFilterQuery(e.target.value)}
-              />
+              <div className="toolbar-filter">
+                <label>Difficulty:</label>
+                <select
+                  value={difficultyFilter}
+                  onChange={(e) => setDifficultyFilter(e.target.value)}
+                >
+                  <option value="All">All Levels</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
             </div>
 
-            <div className="toolbar-filter">
-              <label>Difficulty:</label>
-              <select
-                value={difficultyFilter}
-                onChange={(e) => setDifficultyFilter(e.target.value)}
-              >
-                <option value="All">All Levels</option>
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-              </select>
-            </div>
-          </div>
+            {/* Cards Grid */}
+            {loadingRecommended ? (
+              <div className="loading-grid-placeholder">
+                <div className="spinner" />
+                <p>Loading personalized learning recommendations...</p>
+              </div>
+            ) : filteredRecommended.length === 0 ? (
+              <div className="empty-learning-card">
+                <span className="empty-icon">📚</span>
+                <h3>No matching recommended topics found</h3>
+                <p>
+                  Try changing your difficulty filter or search query, or explore
+                  any custom skill using the search bar above.
+                </p>
+              </div>
+            ) : (
+              <div className="learning-cards-grid">
+                {filteredRecommended.map((topic, idx) => {
+                  const diffClass =
+                    topic.difficulty?.toLowerCase() === "beginner"
+                      ? "diff-beginner"
+                      : topic.difficulty?.toLowerCase() === "intermediate"
+                      ? "diff-intermediate"
+                      : "diff-advanced";
 
-          {/* Cards Grid */}
-          {loadingRecommended ? (
-            <div className="loading-grid-placeholder">
-              <div className="spinner" />
-              <p>Loading personalized learning recommendations...</p>
-            </div>
-          ) : filteredRecommended.length === 0 ? (
-            <div className="empty-learning-card">
-              <span className="empty-icon">📚</span>
-              <h3>No matching recommended topics found</h3>
-              <p>
-                Try changing your difficulty filter or search query, or explore
-                any custom skill using the search bar above.
-              </p>
-            </div>
-          ) : (
-            <div className="learning-cards-grid">
-              {filteredRecommended.map((topic, idx) => {
-                const diffClass =
-                  topic.difficulty?.toLowerCase() === "beginner"
-                    ? "diff-beginner"
-                    : topic.difficulty?.toLowerCase() === "intermediate"
-                    ? "diff-intermediate"
-                    : "diff-advanced";
+                  return (
+                    <div className="learning-card" key={topic._id || topic.title || idx}>
+                      <div className="card-top-row">
+                        <span className={`difficulty-badge ${diffClass}`}>
+                          {topic.difficulty || "Beginner"}
+                        </span>
+                        <span className="card-duration">
+                          ⏳ {topic.duration || "1-2 Weeks"}
+                        </span>
+                      </div>
 
-                return (
-                  <div className="learning-card" key={topic._id || topic.title || idx}>
-                    <div className="card-top-row">
-                      <span className={`difficulty-badge ${diffClass}`}>
-                        {topic.difficulty || "Beginner"}
-                      </span>
-                      <span className="card-duration">
-                        ⏳ {topic.duration || "1-2 Weeks"}
-                      </span>
+                      <h3 className="card-title">{topic.title}</h3>
+                      <p className="card-description">{topic.description}</p>
+
+                      {/* Relevant Career Goals or Why Learn */}
+                      {topic.goals && topic.goals.length > 0 && (
+                        <div className="card-goals-row">
+                          <span className="card-meta-label">Relevant Goal:</span>
+                          <div className="goal-chips">
+                            {topic.goals.map((g, gIdx) => (
+                              <span key={gIdx} className="goal-chip">
+                                🎯 {g}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Skills Covered / Prerequisites */}
+                      {topic.skills && topic.skills.length > 0 && (
+                        <div className="card-skills-row">
+                          <span className="card-meta-label">Skills / Prereqs:</span>
+                          <div className="skill-chips">
+                            {topic.skills.map((s, sIdx) => (
+                              <span key={sIdx} className="skill-chip">
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Resources preview */}
+                      {topic.resources && topic.resources.length > 0 && (
+                        <div className="card-resources-row">
+                          <span className="card-meta-label">Docs & Guides:</span>
+                          <div className="resources-links">
+                            {topic.resources.slice(0, 2).map((res, rIdx) => (
+                              <a
+                                key={rIdx}
+                                href={res.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="card-resource-link"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                🔗 {res.name} ↗
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Card Action */}
+                      <div className="card-action-box">
+                        <button
+                          type="button"
+                          className="view-learning-btn"
+                          style={{ background: "#4f46e5", color: "#ffffff", width: "100%" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/learning-guide?skill=${encodeURIComponent(topic.title)}`);
+                          }}
+                        >
+                          View Learning Guide →
+                        </button>
+                      </div>
                     </div>
-
-                    <h3 className="card-title">{topic.title}</h3>
-                    <p className="card-description">{topic.description}</p>
-
-                    {/* Relevant Career Goals or Why Learn */}
-                    {topic.goals && topic.goals.length > 0 && (
-                      <div className="card-goals-row">
-                        <span className="card-meta-label">Relevant Goal:</span>
-                        <div className="goal-chips">
-                          {topic.goals.map((g, gIdx) => (
-                            <span key={gIdx} className="goal-chip">
-                              🎯 {g}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Skills Covered / Prerequisites */}
-                    {topic.skills && topic.skills.length > 0 && (
-                      <div className="card-skills-row">
-                        <span className="card-meta-label">Skills / Prereqs:</span>
-                        <div className="skill-chips">
-                          {topic.skills.map((s, sIdx) => (
-                            <span key={sIdx} className="skill-chip">
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Resources preview */}
-                    {topic.resources && topic.resources.length > 0 && (
-                      <div className="card-resources-row">
-                        <span className="card-meta-label">Docs & Guides:</span>
-                        <div className="resources-links">
-                          {topic.resources.slice(0, 2).map((res, rIdx) => (
-                            <a
-                              key={rIdx}
-                              href={res.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="card-resource-link"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              🔗 {res.name} ↗
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Card Action */}
-                    <div className="card-action-box">
-                      <button
-                        type="button"
-                        className="view-learning-btn"
-                        onClick={() => handleOpenDetails(topic)}
-                      >
-                        📖 View Learning →
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ========================================================
             4. LEARNING DETAIL VIEW MODAL

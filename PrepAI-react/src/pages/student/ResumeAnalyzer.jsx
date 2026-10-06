@@ -1446,10 +1446,12 @@ export default function ResumeAnalyzer() {
                     <h3>🔍 Skill Analysis</h3>
                     <div className="skill-table">
                       {jobAnalysis.skillAnalysis.map((item, idx) => {
+                        const statusLower = item.status?.toLowerCase();
+                        const isMissingOrPartial = statusLower === "missing" || statusLower === "partial";
                         const statusClass =
-                          item.status?.toLowerCase() === "strong"
+                          statusLower === "strong"
                             ? "skill-strong"
-                            : item.status?.toLowerCase() === "partial"
+                            : statusLower === "partial"
                               ? "skill-partial"
                               : "skill-missing";
 
@@ -1464,6 +1466,29 @@ export default function ResumeAnalyzer() {
                                 <span className="importance-tag">
                                   {item.importance} Importance
                                 </span>
+                              )}
+                              {isMissingOrPartial && (
+                                <button
+                                  type="button"
+                                  className="view-lg-btn"
+                                  style={{
+                                    marginLeft: "auto",
+                                    padding: "4px 10px",
+                                    fontSize: "12px",
+                                    background: "#4f46e5",
+                                    color: "#ffffff",
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                    fontWeight: "600",
+                                  }}
+                                  onClick={() => {
+                                    const roleQuery = jobRole ? `&role=${encodeURIComponent(jobRole)}` : "";
+                                    navigate(`/learning-guide?skill=${encodeURIComponent(item.skill)}${roleQuery}`);
+                                  }}
+                                >
+                                  View Learning Guide
+                                </button>
                               )}
                             </div>
                             <p className="skill-reason-text">{item.reason}</p>
@@ -1496,6 +1521,26 @@ export default function ResumeAnalyzer() {
                               </span>
                             </div>
                             <p className="gap-reason-text">{item.reason}</p>
+                            <button
+                              type="button"
+                              style={{
+                                marginTop: "8px",
+                                padding: "4px 10px",
+                                fontSize: "12px",
+                                background: "#4f46e5",
+                                color: "#ffffff",
+                                border: "none",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontWeight: "600",
+                              }}
+                              onClick={() => {
+                                const roleQuery = jobRole ? `&role=${encodeURIComponent(jobRole)}` : "";
+                                navigate(`/learning-guide?skill=${encodeURIComponent(item.skill)}${roleQuery}`);
+                              }}
+                            >
+                              View Learning Guide
+                            </button>
                           </div>
                         );
                       })}

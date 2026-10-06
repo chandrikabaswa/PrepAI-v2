@@ -8,6 +8,7 @@ const {
   getRecommendedLearning,
   getAILearningRecommendations,
   exploreLearningTopic,
+  getLearningResources,
 } = require("../../controllers/student/learningController");
 
 router.get(
@@ -34,4 +35,11 @@ router.get(
   exploreLearningTopic
 );
 
-module.exports = router;
+router.get(
+  "/resources",
+  protect,
+  getLearningResources
+);
+
+module.exports = router;
+

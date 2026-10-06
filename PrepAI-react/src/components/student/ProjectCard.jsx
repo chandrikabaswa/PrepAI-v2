@@ -52,8 +52,17 @@ export default function ProjectCard({ project }) {
 
       <div className="chips">
         {(projectData.techStack || []).slice(0, 4).map((tech) => (
-          <span key={tech} className="chip">
-            {tech}
+          <span
+            key={tech}
+            className="chip"
+            style={{ cursor: "pointer" }}
+            title={`View Learning Guide for ${tech}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/learning-guide?skill=${encodeURIComponent(tech)}`);
+            }}
+          >
+            {tech} 📖
           </span>
         ))}
       </div>

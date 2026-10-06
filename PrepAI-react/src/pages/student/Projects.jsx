@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import "./Projects.css";
 import Sidebar from "../../components/student/Sidebar";
@@ -30,6 +31,8 @@ const DOMAINS = [
 // Compact Project Card (shared between tabs)
 // ──────────────────────────────────────────────
 function CompactProjectCard({ project, onGuideOpen }) {
+  const navigate = useNavigate();
+
   const dc = DIFFICULTY_COLOR[project.difficulty] || {
     bg: "#f3f4f6",
     color: "#374151",
@@ -60,8 +63,17 @@ function CompactProjectCard({ project, onGuideOpen }) {
 
       <div className="pg-chips">
         {techList.slice(0, 5).map((t) => (
-          <span key={t} className="pg-chip">
-            {t}
+          <span
+            key={t}
+            className="pg-chip"
+            style={{ cursor: "pointer" }}
+            title={`View Learning Guide for ${t}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/learning-guide?skill=${encodeURIComponent(t)}`);
+            }}
+          >
+            {t} 📖
           </span>
         ))}
       </div>

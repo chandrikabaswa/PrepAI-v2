@@ -4,7 +4,11 @@ const User = require("../../models/User");
 const {
   generateLearningRecommendations,
   generateTopicRoadmap,
+  processSerpApiResultsAndGenerateGuide,
 } = require("../../services/groqService");
+const { searchSerpApi } = require("../../services/serpApiService");
+
+const resourceCache = new Map();
 
 function escapeRegex(text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
@@ -192,9 +196,67 @@ const exploreLearningTopic = async (req, res) => {
   }
 };
 
+const getLearningResources = async (req, res) => {
+  try {
+    const skill = (req.query.skill || "").trim();
+    const role = (req.query.role || "").trim();
+
+    if (!skill) {
+      return res.status(400).json({
+        message: "Skill query parameter is required.",
+      });
+    }
+
+    const cacheKey = `${skill.toLowerCase()}:${role.toLowerCase()}`;
+    const cached = resourceCache.get(cacheKey);
+
+    // Cache hit: 1 hour TTL
+    if (cached && Date.now() - cached.timestamp < 3600000) {
+      return res.json(cached.data);
+    }
+
+    // Construct search query for SerpApi Google Search
+    const searchQuery = `${skill} beginner tutorial course documentation practice ${role ? role : ""}`.trim();
+
+    // 1. Fetch real search results from SerpApi
+    const serpResults = await searchSerpApi(searchQuery);
+
+    // 2. Groq AI generates "whatToLearn" roadmap and ranks/categorizes SerpApi results
+    const guideData = await processSerpApiResultsAndGenerateGuide(skill, role, serpResults);
+
+    const responsePayload = {
+      skill,
+      role: role || null,
+      relevance: guideData.relevance,
+      whyLearn: guideData.whyLearn,
+      prerequisites: guideData.prerequisites || [],
+      whatToLearn: guideData.whatToLearn || [],
+      keyConcepts: guideData.keyConcepts || [],
+      suggestedPractice: guideData.suggestedPractice || [],
+      interviewFocus: guideData.interviewFocus || [],
+      resources: guideData.resources || [],
+    };
+
+    // Store in cache
+    resourceCache.set(cacheKey, {
+      data: responsePayload,
+      timestamp: Date.now(),
+    });
+
+    return res.json(responsePayload);
+  } catch (error) {
+    console.error("Get Learning Resources Error:", error);
+    return res.status(500).json({
+      message: error.message || "Failed to fetch learning resources.",
+    });
+  }
+};
+
 module.exports = {
   getRecommendedLearning,
   getAILearningRecommendations,
   exploreLearningTopic,
+  getLearningResources,
 };
+
 

@@ -882,6 +882,238 @@ JSON structure:
   };
 }
 
+async function processSerpApiResultsAndGenerateGuide(skill, role = "", serpResults = []) {
+  const prompt = `
+You are a technical curriculum expert.
+
+Target Skill: "${skill}"
+${role ? `Target Job Role Context: "${role}"` : ""}
+
+We have performed a real search via SerpApi Google Search for resources about "${skill}".
+
+SERPAPI REAL SEARCH RESULTS (ONLY USE URLS FROM THIS LIST):
+${JSON.stringify(serpResults, null, 2)}
+
+INSTRUCTIONS:
+1. "relevance": A 1-2 sentence explanation of why learning "${skill}" is important${role ? ` specifically for targeting the "${role}" position` : " for software engineering careers"}.
+2. "whyLearn": A short 1-2 sentence practical explanation of where "${skill}" is used in industry and why it is useful for tech careers.
+3. "prerequisites": Array of 3-5 foundational skills or topics needed before learning "${skill}".
+4. "whatToLearn": A concise array of 5-6 core topics/concepts to master in "${skill}" (e.g. Fundamentals, Core Principles, Key Workflows, Best Practices, Project Integration).
+5. "keyConcepts": Array of 4-6 key technical concepts, tools, or keywords associated with "${skill}".
+6. "suggestedPractice": Array of 1-2 lightweight hands-on practice suggestions for "${skill}".
+7. "interviewFocus": Array of 3-4 key technical interview questions or core focus topics for "${skill}".
+8. "resources": Select, rank, and categorize ONLY the relevant resources from the provided SERPAPI search results.
+   - Categorize into one of: "Video" 🎥, "Course" 📚, "Documentation" 📖, "Practice" 💻.
+   - Only include categories for which real suitable search results exist.
+   - CRITICAL REQUIREMENT: The "url" field MUST BE AN EXACT MATCH to a URL present in the SERPAPI search results list above. DO NOT invent, alter, or hallucinate URLs.
+   - For each resource include:
+     - "title": Clean title of the resource
+     - "url": EXACT URL from search results
+     - "category": "Video" | "Course" | "Documentation" | "Practice"
+     - "platform": Name of source/platform (e.g. YouTube, freeCodeCamp, Udemy, Official Docs, MDN, etc.)
+     - "reason": 1 concise sentence explaining why this resource is useful.
+
+Return ONLY valid JSON format:
+{
+  "relevance": "...",
+  "whyLearn": "...",
+  "prerequisites": ["Skill 1", "Skill 2", "Skill 3"],
+  "whatToLearn": [
+    "Topic 1",
+    "Topic 2",
+    "Topic 3",
+    "Topic 4",
+    "Topic 5"
+  ],
+  "keyConcepts": ["Concept 1", "Concept 2", "Concept 3", "Concept 4"],
+  "suggestedPractice": [
+    "Build a simple application that demonstrates core capabilities of ${skill}."
+  ],
+  "interviewFocus": [
+    "Question or core interview topic 1",
+    "Question or core interview topic 2"
+  ],
+  "resources": [
+    {
+      "title": "...",
+      "url": "...",
+      "category": "Video",
+      "platform": "YouTube",
+      "reason": "..."
+    }
+  ]
+}
+`;
+
+  let parsed = {
+    relevance: "",
+    whyLearn: "",
+    prerequisites: [],
+    whatToLearn: [],
+    keyConcepts: [],
+    suggestedPractice: [],
+    interviewFocus: [],
+    resources: [],
+  };
+
+  try {
+    const response = await groq.chat.completions.create({
+      model: "openai/gpt-oss-20b",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.3,
+      max_completion_tokens: 4000,
+    });
+
+    const content = response.choices[0]?.message?.content || "{}";
+    let cleaned = content
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+
+    if (start !== -1 && end !== -1) {
+      cleaned = cleaned.substring(start, end + 1);
+      parsed = JSON.parse(cleaned);
+    }
+  } catch (error) {
+    console.error("Groq SerpApi processing error:", error.message || error);
+  }
+
+  // STRICT BACKEND URL VALIDATION
+  const validUrlMap = new Map();
+  serpResults.forEach((item) => {
+    if (item.url) {
+      validUrlMap.set(item.url.trim().toLowerCase(), item);
+    }
+  });
+
+  const validatedResources = [];
+  if (Array.isArray(parsed.resources)) {
+    for (const res of parsed.resources) {
+      if (!res.url) continue;
+      const normalizedUrl = res.url.trim().toLowerCase();
+      // Check if URL matches a SerpApi result URL
+      if (validUrlMap.has(normalizedUrl)) {
+        const original = validUrlMap.get(normalizedUrl);
+        validatedResources.push({
+          title: res.title || original.title,
+          url: original.url, // STRICTLY use original SerpApi URL string
+          category: ["Video", "Course", "Documentation", "Practice"].includes(res.category)
+            ? res.category
+            : inferCategory(original.url, original.title),
+          platform: res.platform || getDomainName(original.url),
+          reason: res.reason || original.description.slice(0, 140) || `Useful resource for ${skill}.`,
+        });
+      } else {
+        console.warn(`DISCARDED HALLUCINATED GROQ URL: ${res.url}`);
+      }
+    }
+  }
+
+  // FALLBACK: If Groq returned 0 valid resources or failed, build resources directly from SerpApi search results
+  if (validatedResources.length === 0 && serpResults.length > 0) {
+    serpResults.forEach((sr) => {
+      validatedResources.push({
+        title: sr.title,
+        url: sr.url,
+        category: inferCategory(sr.url, sr.title),
+        platform: getDomainName(sr.url),
+        reason: sr.description ? sr.description.slice(0, 140) + "..." : `Helpful resource for learning ${skill}.`,
+      });
+    });
+  }
+
+  return {
+    relevance:
+      parsed.relevance ||
+      (role
+        ? `${skill} is a fundamental skill directly relevant to the ${role} position.`
+        : `${skill} is widely used in software engineering and technical interviews.`),
+    whyLearn:
+      parsed.whyLearn ||
+      `Mastering ${skill} provides essential technical competence for building scalable software systems and succeeding in technical rounds.`,
+    prerequisites:
+      Array.isArray(parsed.prerequisites) && parsed.prerequisites.length > 0
+        ? parsed.prerequisites
+        : ["Basic Programming Foundations", "Core Logic & Syntax", "Developer Environment Setup"],
+    whatToLearn:
+      Array.isArray(parsed.whatToLearn) && parsed.whatToLearn.length > 0
+        ? parsed.whatToLearn
+        : [
+            `${skill} Fundamentals & Architecture`,
+            `Core Concepts & Syntax`,
+            `Practical Implementation & Patterns`,
+            `Best Practices & Performance`,
+            `Real-world Project Integration`,
+          ],
+    keyConcepts:
+      Array.isArray(parsed.keyConcepts) && parsed.keyConcepts.length > 0
+        ? parsed.keyConcepts
+        : [skill, "Core API", "Architecture", "Best Practices", "Debugging"],
+    suggestedPractice:
+      Array.isArray(parsed.suggestedPractice) && parsed.suggestedPractice.length > 0
+        ? parsed.suggestedPractice
+        : [`Build a clean practical project demonstrating key capabilities of ${skill}.`],
+    interviewFocus:
+      Array.isArray(parsed.interviewFocus) && parsed.interviewFocus.length > 0
+        ? parsed.interviewFocus
+        : [
+            `What are the foundational principles of ${skill}?`,
+            `How do you optimize performance and manage trade-offs when working with ${skill}?`,
+            `Explain a real-world scenario where you would choose ${skill}.`,
+          ],
+    resources: validatedResources,
+  };
+}
+
+function inferCategory(url, title) {
+  const lUrl = (url || "").toLowerCase();
+  const lTitle = (title || "").toLowerCase();
+
+  if (
+    lUrl.includes("youtube.com") ||
+    lUrl.includes("youtu.be") ||
+    lTitle.includes("video") ||
+    lTitle.includes("watch")
+  ) {
+    return "Video";
+  }
+  if (
+    lUrl.includes("udemy.com") ||
+    lUrl.includes("coursera.org") ||
+    lUrl.includes("pluralsight.com") ||
+    lTitle.includes("course")
+  ) {
+    return "Course";
+  }
+  if (
+    lUrl.includes("leetcode.com") ||
+    lUrl.includes("hackerrank.com") ||
+    lUrl.includes("exercism") ||
+    lTitle.includes("practice") ||
+    lTitle.includes("exercise")
+  ) {
+    return "Practice";
+  }
+  return "Documentation";
+}
+
+function getDomainName(urlStr) {
+  try {
+    const parsed = new URL(urlStr);
+    return parsed.hostname.replace(/^www\./, "");
+  } catch {
+    return "Web Link";
+  }
+}
+
 module.exports = {
   generateInterviewQuestions,
   evaluateInterviewAnswers,
@@ -892,7 +1124,9 @@ module.exports = {
   extractSkillsFromResume,
   generateCustomProjectIdeas,
   generateTopicRoadmap,
+  processSerpApiResultsAndGenerateGuide,
 };
+
 
 
 

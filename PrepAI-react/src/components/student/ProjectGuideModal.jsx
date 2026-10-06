@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./ProjectGuideModal.css";
 
 // Curated verified official technical documentation
@@ -570,6 +571,7 @@ export function buildProjectGuide(proj) {
  * Reusable Project Implementation Guide Modal component.
  */
 export default function ProjectGuideModal({ project, onClose }) {
+  const navigate = useNavigate();
   const [selectedProblem, setSelectedProblem] = useState(null);
 
   if (!project) return null;
@@ -734,11 +736,20 @@ export default function ProjectGuideModal({ project, onClose }) {
 
           {/* Skills Demonstrated */}
           <div className="modal-section">
-            <h4>🎓 Skills You'll Demonstrate</h4>
+            <h4>🎓 Skills & Technologies</h4>
             <div className="modal-skills-list">
               {guide.skills.map((skill, i) => (
-                <span className="modal-skill-pill" key={i}>
-                  ✓ {skill}
+                <span
+                  className="modal-skill-pill"
+                  key={i}
+                  style={{ cursor: "pointer" }}
+                  title={`View Learning Guide for ${skill}`}
+                  onClick={() => {
+                    onClose();
+                    navigate(`/learning-guide?skill=${encodeURIComponent(skill)}`);
+                  }}
+                >
+                  ✓ {skill} 📖
                 </span>
               ))}
             </div>

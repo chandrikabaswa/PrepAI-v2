@@ -6,6 +6,7 @@ import Experience from "./pages/student/Experience";
 import Internships from "./pages/student/Internships";
 import InterviewResult from "./pages/student/InterviewResult";
 import Learning from "./pages/student/Learning";
+import LearningGuide from "./pages/student/LearningGuide";
 import MockInterviews from "./pages/student/MockInterviews";
 import ProfileSetup from "./pages/student/ProfileSetup";
 import ProjectDetails from "./pages/student/ProjectDetails";
@@ -48,6 +49,8 @@ function App() {
         <Route path="/projects/:id" element={<ProjectDetails />} />
 
         <Route path="/learning" element={<Learning />} />
+
+        <Route path="/learning-guide" element={<LearningGuide />} />
 
         <Route path="/interview-result" element={<InterviewResult />} />
 

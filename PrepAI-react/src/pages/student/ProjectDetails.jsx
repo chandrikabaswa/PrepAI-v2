@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
 import "./ProjectDetails.css";
 
 function ProjectDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [project, setProject] = useState(null);
 
@@ -38,8 +39,14 @@ function ProjectDetails() {
       <h3>Skills Required</h3>
       <div className="chips">
         {project.skills.map((skill) => (
-          <span key={skill} className="chip">
-            {skill}
+          <span
+            key={skill}
+            className="chip"
+            style={{ cursor: "pointer" }}
+            title={`View Learning Guide for ${skill}`}
+            onClick={() => navigate(`/learning-guide?skill=${encodeURIComponent(skill)}`)}
+          >
+            {skill} 📖
           </span>
         ))}
       </div>
@@ -47,8 +54,14 @@ function ProjectDetails() {
       <h3>Tech Stack</h3>
       <div className="chips">
         {project.techStack.map((tech) => (
-          <span key={tech} className="chip">
-            {tech}
+          <span
+            key={tech}
+            className="chip"
+            style={{ cursor: "pointer" }}
+            title={`View Learning Guide for ${tech}`}
+            onClick={() => navigate(`/learning-guide?skill=${encodeURIComponent(tech)}`)}
+          >
+            {tech} 📖
           </span>
         ))}
       </div>
