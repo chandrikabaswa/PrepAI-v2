@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../services/api";
 
@@ -9,8 +9,15 @@ import InternshipCard from "../../components/student/InternshipCard";
 function Internships({ defaultTab = "recommended" }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const tabsRef = useRef(null);
 
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user")) || {};
+    } catch {
+      return {};
+    }
+  });
   const [recommendedInternships, setRecommendedInternships] = useState([]);
   const [allInternships, setAllInternships] = useState([]);
   const [appliedInternships, setAppliedInternships] = useState({});
@@ -20,6 +27,7 @@ function Internships({ defaultTab = "recommended" }) {
     const params = new URLSearchParams(searchValue);
     const tabParam = params.get("tab");
 
+    if (tabParam === "skills" || defaultTabValue === "skills") return "skills";
     if (tabParam === "applied" || defaultTabValue === "applied") return "applied";
     if (tabParam === "all" || defaultTabValue === "all") return "all";
     if (tabParam === "recommended") return "recommended";
@@ -31,10 +39,24 @@ function Internships({ defaultTab = "recommended" }) {
     [defaultTab, location.search]
   );
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("search") || "";
+  });
+  const [prevLocationSearch, setPrevLocationSearch] = useState(location.search);
+
+  if (prevLocationSearch !== location.search) {
+    setPrevLocationSearch(location.search);
+    const searchParam = new URLSearchParams(location.search).get("search");
+    if (searchParam !== null && searchParam !== search) {
+      setSearch(searchParam);
+    }
+  }
+
   const [statusFilter, setStatusFilter] = useState("all");
   const [withdrawingId, setWithdrawingId] = useState(null);
   const [feedbackMessage, setFeedbackMessage] = useState(null);
+  const [skillsSubTab, setSkillsSubTab] = useState("mySkills");
 
   const handleTabChange = (tab) => {
     const params = new URLSearchParams(location.search);
@@ -149,6 +171,156 @@ function Internships({ defaultTab = "recommended" }) {
     }
   };
 
+  // ─────────────────────────────────────────────────────────────
+  // YOUR SKILL STRENGTH: Frequency of existing skills in Explore All
+  // ─────────────────────────────────────────────────────────────
+  const skillStrengthData = useMemo(() => {
+    const rawSkills = Array.isArray(user?.skills) ? user.skills : [];
+
+    // Deduplicate student's existing skills (case-insensitive, whitespace-normalized)
+    const uniqueSkills = [];
+    const seen = new Set();
+    for (const s of rawSkills) {
+      if (typeof s === "string" && s.trim()) {
+        const normalized = s.trim().toLowerCase();
+        if (!seen.has(normalized)) {
+          seen.add(normalized);
+          uniqueSkills.push(s.trim());
+        }
+      }
+    }
+
+    // Complete internship dataset from Explore -> All
+    const totalOpportunities = allInternships.length;
+
+    // Count appearances of each skill across all internships in Explore -> All
+    const stats = uniqueSkills.map((skillName) => {
+      const normalizedSkill = skillName.trim().toLowerCase();
+
+      // Check how many internships mention/require that skill
+      // Count an internship only once for a skill, even if the skill appears multiple times
+      // Matching is case-insensitive and whitespace-normalized
+      let opportunityCount = 0;
+      for (const internship of allInternships) {
+        const intSkills = Array.isArray(internship?.skills) ? internship.skills : [];
+        const hasSkill = intSkills.some(
+          (item) => typeof item === "string" && item.trim().toLowerCase() === normalizedSkill
+        );
+        if (hasSkill) {
+          opportunityCount++;
+        }
+      }
+
+      // Calculate opportunity percentage (avoid division by zero)
+      const percentage =
+        totalOpportunities > 0
+          ? Math.round((opportunityCount / totalOpportunities) * 100)
+          : 0;
+
+      return {
+        skill: skillName,
+        opportunityCount,
+        totalOpportunities,
+        percentage,
+      };
+    });
+
+    // Sort student's skills by opportunityCount descending so most widely used skills appear first
+    stats.sort((a, b) => {
+      if (b.opportunityCount !== a.opportunityCount) {
+        return b.opportunityCount - a.opportunityCount;
+      }
+      return a.skill.localeCompare(b.skill);
+    });
+
+    return {
+      stats,
+      totalOpportunities,
+      hasSkills: uniqueSkills.length > 0,
+    };
+  }, [user.skills, allInternships]);
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. SKILL DEMAND: Student's missing skills in Explore All
+  // ─────────────────────────────────────────────────────────────
+  const skillDemandData = useMemo(() => {
+    const userSkillSet = new Set(
+      (Array.isArray(user?.skills) ? user.skills : [])
+        .filter((s) => typeof s === "string" && s.trim())
+        .map((s) => s.trim().toLowerCase())
+    );
+
+    // Identify all unique missing skills across all internships in Explore -> All
+    const missingSkillsMap = new Map();
+    allInternships.forEach((internship) => {
+      const intSkills = Array.isArray(internship?.skills) ? internship.skills : [];
+      intSkills.forEach((s) => {
+        if (typeof s === "string" && s.trim()) {
+          const norm = s.trim().toLowerCase();
+          if (!userSkillSet.has(norm) && !missingSkillsMap.has(norm)) {
+            missingSkillsMap.set(norm, s.trim());
+          }
+        }
+      });
+    });
+
+    const totalOpportunities = allInternships.length;
+
+    const stats = Array.from(missingSkillsMap.entries()).map(([, displayName]) => {
+      const normSkill = displayName.trim().toLowerCase();
+      let opportunityCount = 0;
+      for (const internship of allInternships) {
+        const intSkills = Array.isArray(internship?.skills) ? internship.skills : [];
+        const hasSkill = intSkills.some(
+          (item) => typeof item === "string" && item.trim().toLowerCase() === normSkill
+        );
+        if (hasSkill) {
+          opportunityCount++;
+        }
+      }
+
+      const percentage =
+        totalOpportunities > 0
+          ? Math.round((opportunityCount / totalOpportunities) * 100)
+          : 0;
+
+      return {
+        skill: displayName,
+        opportunityCount,
+        totalOpportunities,
+        percentage,
+      };
+    });
+
+    stats.sort((a, b) => {
+      if (b.opportunityCount !== a.opportunityCount) {
+        return b.opportunityCount - a.opportunityCount;
+      }
+      return a.skill.localeCompare(b.skill);
+    });
+
+    return {
+      stats,
+      totalOpportunities,
+      hasMissingSkills: stats.length > 0,
+    };
+  }, [user.skills, allInternships]);
+
+  const handleViewOpportunities = (skillName) => {
+    const params = new URLSearchParams(location.search);
+    params.set("tab", "all");
+    params.set("search", skillName);
+    navigate({ pathname: "/internships", search: `?${params.toString()}` });
+    setSearch(skillName);
+    if (tabsRef.current) {
+      tabsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleLearnSkill = (skillName) => {
+    navigate(`/learning?tab=explore&search=${encodeURIComponent(skillName)}`);
+  };
+
   const internships =
     activeTab === "recommended" ? recommendedInternships : allInternships;
 
@@ -157,10 +329,12 @@ function Internships({ defaultTab = "recommended" }) {
       const keyword = search.toLowerCase();
 
       return (
-        internship.title.toLowerCase().includes(keyword) ||
-        internship.company.toLowerCase().includes(keyword) ||
-        internship.location.toLowerCase().includes(keyword) ||
-        internship.skills.some((skill) => skill.toLowerCase().includes(keyword))
+        (internship.title || "").toLowerCase().includes(keyword) ||
+        (internship.company || "").toLowerCase().includes(keyword) ||
+        (internship.location || "").toLowerCase().includes(keyword) ||
+        (internship.skills || []).some((skill) =>
+          typeof skill === "string" && skill.toLowerCase().includes(keyword)
+        )
       );
     });
   }, [internships, search]);
@@ -288,12 +462,16 @@ function Internships({ defaultTab = "recommended" }) {
           <h1>
             {activeTab === "applied"
               ? "My Applications"
+              : activeTab === "skills"
+              ? "Skill Insights"
               : "Internship Opportunities"}
           </h1>
 
           <p>
             {activeTab === "applied"
               ? "Track your submitted applications, review progress, and status updates in real-time."
+              : activeTab === "skills"
+              ? "Analyze your skill strength and discover market demand across current opportunities."
               : "Discover internships matched to your skills."}
           </p>
         </div>
@@ -305,7 +483,7 @@ function Internships({ defaultTab = "recommended" }) {
           </div>
         )}
 
-        <div className="internship-tabs tabs">
+        <div ref={tabsRef} className="internship-tabs tabs">
           <button
             className={`internship-tab ${activeTab === "recommended" ? "active" : ""}`}
             onClick={() => handleTabChange("recommended")}
@@ -317,7 +495,7 @@ function Internships({ defaultTab = "recommended" }) {
             className={`internship-tab ${activeTab === "all" ? "active" : ""}`}
             onClick={() => handleTabChange("all")}
           >
-            Explore All ({allInternships.length})
+            All ({allInternships.length})
           </button>
 
           <button
@@ -325,6 +503,13 @@ function Internships({ defaultTab = "recommended" }) {
             onClick={() => handleTabChange("applied")}
           >
             My Applications ({myApplications.length})
+          </button>
+
+          <button
+            className={`internship-tab ${activeTab === "skills" ? "active" : ""}`}
+            onClick={() => handleTabChange("skills")}
+          >
+            Skills
           </button>
         </div>
 
@@ -631,7 +816,163 @@ function Internships({ defaultTab = "recommended" }) {
               </div>
             )}
           </div>
-        ) : (
+        ) : activeTab === "skills" ? (
+          <div className="skills-tab-container">
+            <div className="skills-subtabs tabs">
+              <button
+                className={`internship-tab ${skillsSubTab === "mySkills" ? "active" : ""}`}
+                onClick={() => setSkillsSubTab("mySkills")}
+              >
+                My Skills
+              </button>
+              <button
+                className={`internship-tab ${skillsSubTab === "skillsToLearn" ? "active" : ""}`}
+                onClick={() => setSkillsSubTab("skillsToLearn")}
+              >
+                Skills to Learn
+              </button>
+            </div>
+
+            {skillsSubTab === "mySkills" && (
+              <section
+                className="skill-strength-section"
+                aria-label="Your Skill Strength"
+              >
+                <div className="skill-strength-header">
+                  <h2 className="skill-strength-title">🧠 My Skills</h2>
+                  <p className="skill-strength-subtitle">
+                    See how often your existing skills appear across current PrepAI opportunities.
+                  </p>
+                </div>
+
+                {!skillStrengthData.hasSkills ? (
+                  <div className="skill-strength-empty">
+                    <p className="skill-strength-empty-text">
+                      Add skills to your profile to see how they match current opportunities.
+                    </p>
+                    <button
+                      type="button"
+                      className="skill-strength-profile-btn"
+                      onClick={() => navigate("/profile?tab=profile")}
+                    >
+                      Add Skills to Profile →
+                    </button>
+                  </div>
+                ) : skillStrengthData.totalOpportunities === 0 ? (
+                  <div className="skill-strength-empty">
+                    <p className="skill-strength-empty-text">
+                      No active internship opportunities are currently available.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="skills-list">
+                    <div className="skills-list-header">
+                      <span className="col-skill">Skill</span>
+                      <span className="col-opportunities">Opportunities</span>
+                      <span className="col-actions"></span>
+                    </div>
+                    {skillStrengthData.stats.map((item) => (
+                      <div key={item.skill} className="skills-list-row">
+                        <div className="skill-row-info">
+                          <span className="skill-row-name">{item.skill}</span>
+                        </div>
+                        <div className="skill-row-stats">
+                          <div className="skill-row-numbers">
+                            <span>{item.opportunityCount} / {item.totalOpportunities} opportunities</span>
+                            <span className="skill-row-percent">{item.percentage}%</span>
+                          </div>
+                          <div className="skill-row-bar-bg" aria-hidden="true">
+                            <div
+                              className="skill-row-bar-fill"
+                              style={{
+                                width: `${Math.min(100, Math.max(0, item.percentage))}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="skill-row-actions">
+                          <button
+                            type="button"
+                            className="skill-strength-action-btn"
+                            onClick={() => handleViewOpportunities(item.skill)}
+                          >
+                            View Opportunities →
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {skillsSubTab === "skillsToLearn" && (
+              <section
+                className="skill-strength-section skill-demand-section"
+                aria-label="Skill Demand"
+              >
+                <div className="skill-strength-header">
+                  <h2 className="skill-strength-title">📊 Skills to Learn</h2>
+                  <p className="skill-strength-subtitle">
+                    See which missing skills appear most often in current PrepAI opportunities.
+                  </p>
+                </div>
+
+                {!skillDemandData.hasMissingSkills ? (
+                  <div className="skill-strength-empty">
+                    <p className="skill-strength-empty-text">
+                      You currently don't have any identified skill gaps.
+                    </p>
+                  </div>
+                ) : skillDemandData.totalOpportunities === 0 ? (
+                  <div className="skill-strength-empty">
+                    <p className="skill-strength-empty-text">
+                      No active internship opportunities are currently available.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="skills-list">
+                    <div className="skills-list-header">
+                      <span className="col-skill">Skill</span>
+                      <span className="col-opportunities">Opportunities</span>
+                      <span className="col-actions"></span>
+                    </div>
+                    {skillDemandData.stats.map((item) => (
+                      <div key={item.skill} className="skills-list-row">
+                        <div className="skill-row-info">
+                          <span className="skill-row-name">{item.skill}</span>
+                        </div>
+                        <div className="skill-row-stats">
+                          <div className="skill-row-numbers">
+                            <span>{item.opportunityCount} / {item.totalOpportunities} opportunities</span>
+                            <span className="skill-row-percent">{item.percentage}%</span>
+                          </div>
+                          <div className="skill-row-bar-bg" aria-hidden="true">
+                            <div
+                              className="skill-row-bar-fill demand-fill"
+                              style={{
+                                width: `${Math.min(100, Math.max(0, item.percentage))}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="skill-row-actions">
+                          <button
+                            type="button"
+                            className="skill-strength-action-btn demand-btn"
+                            onClick={() => handleLearnSkill(item.skill)}
+                          >
+                            Learn {item.skill} →
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
+        ) : filteredInternships.length > 0 ? (
           <div className="intern-grid">
             {filteredInternships.map((internship) => (
               <InternshipCard
@@ -642,6 +983,32 @@ function Internships({ defaultTab = "recommended" }) {
                 onApplied={() => handleApplySuccess(internship._id)}
               />
             ))}
+          </div>
+        ) : (
+          <div className="empty-applications-card">
+            <div className="empty-icon">🔍</div>
+            <h3>No matching internships</h3>
+            <p>
+              {search
+                ? `No internships match "${search}". Try searching for another skill or company.`
+                : "No internships available in this section."}
+            </p>
+            {search && (
+              <button
+                className="explore-btn"
+                onClick={() => {
+                  setSearch("");
+                  const params = new URLSearchParams(location.search);
+                  params.delete("search");
+                  navigate({
+                    pathname: location.pathname,
+                    search: params.toString() ? `?${params.toString()}` : "",
+                  });
+                }}
+              >
+                Clear Search Filter
+              </button>
+            )}
           </div>
         )}
       </div>

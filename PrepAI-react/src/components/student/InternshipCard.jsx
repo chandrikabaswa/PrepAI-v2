@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import "./InternshipCard.css";
 
@@ -8,6 +9,7 @@ export default function InternshipCard({
   appliedStatus,
   onApplied,
 }) {
+  const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -18,9 +20,26 @@ export default function InternshipCard({
   const hasMissingSkills =
     internship.missingSkills && internship.missingSkills.length > 0;
 
+  const isPerfectMatch = internship.match === 100;
   const isRecruiterPosting = Boolean(internship.postedBy);
   const applied = isApplied || submitted;
   const currentStatus = appliedStatus || (submitted ? "Applied" : null);
+
+  // Navigate to Learn & Upskill → Explore tab with the skill pre-searched
+  const handleMissingSkillClick = (skill) => {
+    navigate(`/learning?tab=explore&search=${encodeURIComponent(skill)}`);
+  };
+
+  // Navigate to Mock Interview with internship role and JD context
+  const handlePracticeMockInterview = () => {
+    navigate("/mock-interview", {
+      state: {
+        role: internship.title || "",
+        description: internship.description || "",
+        questionType: internship.description ? "jobDescription" : "general",
+      },
+    });
+  };
 
   const handleApply = async () => {
     if (!isRecruiterPosting) {
@@ -107,12 +126,18 @@ export default function InternshipCard({
 
         {hasMissingSkills && (
           <div className="skills-group">
-            <span className="skills-sublabel">Missing Skills:</span>
+            <span className="skills-sublabel">Missing Skills — click to learn:</span>
             <div className="skills-chips">
               {internship.missingSkills.map((skill) => (
-                <span key={skill} className="skill-chip missing">
-                  {skill}
-                </span>
+                <button
+                  key={skill}
+                  type="button"
+                  className="skill-chip missing skill-chip-clickable"
+                  onClick={() => handleMissingSkillClick(skill)}
+                  title={`Learn ${skill} on Learn & Upskill page`}
+                >
+                  📚 {skill}
+                </button>
               ))}
             </div>
           </div>
@@ -139,6 +164,16 @@ export default function InternshipCard({
         )}
 
         <div className="action-buttons-group">
+          {isPerfectMatch && (
+            <button
+              type="button"
+              className="practice-interview-btn"
+              onClick={handlePracticeMockInterview}
+              title="Open Mock Interview with this role's context"
+            >
+              🎯 Practice Mock Interview →
+            </button>
+          )}
           {isRecruiterPosting ? (
             applied ? (
               <>
